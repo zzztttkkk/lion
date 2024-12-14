@@ -112,7 +112,7 @@ func addfields[M any](fs *[]Field[M], gotype reflect.Type, tagnames []string, pt
 	}
 }
 
-func (ti *TypeInfo[M]) fieldByOffset(offset int64) *Field[M] {
+func (ti *TypeInfo[M]) FieldByOffset(offset int64) *Field[M] {
 	if ti.offsetmap != nil {
 		return ti.offsetmap[offset]
 	}
@@ -126,7 +126,7 @@ func (ti *TypeInfo[M]) fieldByOffset(offset int64) *Field[M] {
 }
 
 func (ti *TypeInfo[M]) FieldByUnsafePtr(ptr unsafe.Pointer) *Field[M] {
-	return ti.fieldByOffset(int64(uintptr(ptr)) - ti.PtrNum)
+	return ti.FieldByOffset(int64(uintptr(ptr)) - ti.PtrNum)
 }
 
 func (ti *TypeInfo[M]) FieldByPtr(ptr any) *Field[M] {
