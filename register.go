@@ -11,7 +11,7 @@ var (
 )
 
 func RegisterOf[M any]() *_Register[M] {
-	gotype := typeof[M]()
+	gotype := Typeof[M]()
 
 	v, ok := registers[gotype]
 	if ok {

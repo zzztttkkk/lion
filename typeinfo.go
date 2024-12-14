@@ -24,7 +24,7 @@ var (
 )
 
 func Ptr[T any]() *T {
-	gotype := typeof[T]()
+	gotype := Typeof[T]()
 	pv, ok := ptrs[gotype]
 	if ok {
 		return pv.(*T)
@@ -34,12 +34,12 @@ func Ptr[T any]() *T {
 	return ptr
 }
 
-func typeof[T any]() reflect.Type {
+func Typeof[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
 
 func TypeInfoOf[T any, M any]() *TypeInfo[M] {
-	gotype := typeof[T]()
+	gotype := Typeof[T]()
 	ti, ok := typeinfos[gotype]
 	if ok {
 		return ti.(*TypeInfo[M])
