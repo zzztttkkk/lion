@@ -6,49 +6,60 @@ import (
 	"unsafe"
 )
 
-type TypeInfo struct {
+type TypeInfo[M any] struct {
 	Name   string
 	GoType reflect.Type
 
-	Fields    []Field
-	offsetmap map[int64]*Field
+	Fields    []Field[M]
+	offsetmap map[int64]*Field[M]
 
 	Ptr    unsafe.Pointer
 	PtrNum int64
 }
 
 var (
-	typeinfos = map[reflect.Type]*TypeInfo{}
+	typeinfos = map[reflect.Type]any{}
+	ptrs      = map[reflect.Type]any{}
 )
+
+func Ptr[T any]() *T {
+	gotype := typeof[T]()
+	pv, ok := ptrs[gotype]
+	if ok {
+		return pv.(*T)
+	}
+	ptr := new(T)
+	ptrs[gotype] = ptr
+	return ptr
+}
 
 func typeof[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
 
-func TypeInfoOf[T any]() *TypeInfo {
+func TypeInfoOf[T any, M any]() *TypeInfo[M] {
 	gotype := typeof[T]()
 	ti, ok := typeinfos[gotype]
 	if ok {
-		return ti
+		return ti.(*TypeInfo[M])
 	}
-
-	obj := &TypeInfo{
-		GoType: gotype,
-	}
+	reg := RegisterOf[M]()
+	obj := makeTypeinfo[M](reg.tagnames, gotype, Ptr[T]())
+	typeinfos[gotype] = obj
 	return obj
 }
 
-func makeTypeinfo(tagnames []string, gotype reflect.Type, ptr any) *TypeInfo {
+func makeTypeinfo[M any](tagnames []string, gotype reflect.Type, ptr any) *TypeInfo[M] {
 	ptrv := reflect.ValueOf(ptr)
 	uptr := ptrv.UnsafePointer()
-	ti := &TypeInfo{
+	ti := &TypeInfo[M]{
 		GoType: gotype,
 		Ptr:    uptr,
 		PtrNum: int64(uintptr(uptr)),
 	}
 	addfields(&ti.Fields, ti.GoType, tagnames, ptrv, ti.PtrNum)
 	if len(ti.Fields) > 12 {
-		ti.offsetmap = map[int64]*Field{}
+		ti.offsetmap = map[int64]*Field[M]{}
 		for i := 0; i < len(ti.Fields); i++ {
 			ptr := &ti.Fields[i]
 			ti.offsetmap[ptr.Offset] = ptr
@@ -72,7 +83,7 @@ func gettag(sf *reflect.StructField, tags ...string) string {
 	return ""
 }
 
-func addfields(fs *[]Field, gotype reflect.Type, tagnames []string, ptrv reflect.Value, begin int64) {
+func addfields[M any](fs *[]Field[M], gotype reflect.Type, tagnames []string, ptrv reflect.Value, begin int64) {
 	vv := ptrv.Elem()
 
 	for i := 0; i < gotype.NumField(); i++ {
@@ -84,12 +95,12 @@ func addfields(fs *[]Field, gotype reflect.Type, tagnames []string, ptrv reflect
 		fv := vv.Field(i)
 		fptr := fv.Addr()
 		if sf.Anonymous {
-			var _fs []Field
+			var _fs []Field[M]
 			addfields(&_fs, sf.Type, tagnames, fptr, begin)
 			*fs = append(*fs, _fs...)
 			return
 		}
-		field := Field{
+		field := Field[M]{
 			Name:   gettagname(tag),
 			Field:  sf,
 			Offset: int64(fptr.Pointer()) - begin,
@@ -101,7 +112,7 @@ func addfields(fs *[]Field, gotype reflect.Type, tagnames []string, ptrv reflect
 	}
 }
 
-func (ti *TypeInfo) fieldByOffset(offset int64) *Field {
+func (ti *TypeInfo[M]) fieldByOffset(offset int64) *Field[M] {
 	if ti.offsetmap != nil {
 		return ti.offsetmap[offset]
 	}
@@ -114,10 +125,10 @@ func (ti *TypeInfo) fieldByOffset(offset int64) *Field {
 	return nil
 }
 
-func (ti *TypeInfo) FieldByUnsafePtr(ptr unsafe.Pointer) *Field {
+func (ti *TypeInfo[M]) FieldByUnsafePtr(ptr unsafe.Pointer) *Field[M] {
 	return ti.fieldByOffset(int64(uintptr(ptr)) - ti.PtrNum)
 }
 
-func (ti *TypeInfo) FieldByPtr(ptr any) *Field {
+func (ti *TypeInfo[M]) FieldByPtr(ptr any) *Field[M] {
 	return ti.FieldByUnsafePtr(reflect.ValueOf(ptr).UnsafePointer())
 }
