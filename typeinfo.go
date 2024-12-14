@@ -13,8 +13,9 @@ type TypeInfo[M any] struct {
 	Fields    []Field[M]
 	offsetmap map[int64]*Field[M]
 
-	Ptr    unsafe.Pointer
-	PtrNum int64
+	PtrAny    any
+	PtrUnsafe unsafe.Pointer
+	PtrNum    int64
 }
 
 var (
@@ -53,9 +54,10 @@ func makeTypeinfo[M any](tagnames []string, gotype reflect.Type, ptr any) *TypeI
 	ptrv := reflect.ValueOf(ptr)
 	uptr := ptrv.UnsafePointer()
 	ti := &TypeInfo[M]{
-		GoType: gotype,
-		Ptr:    uptr,
-		PtrNum: int64(uintptr(uptr)),
+		GoType:    gotype,
+		PtrAny:    ptr,
+		PtrUnsafe: uptr,
+		PtrNum:    int64(uintptr(uptr)),
 	}
 	addfields(&ti.Fields, ti.GoType, tagnames, ptrv, ti.PtrNum)
 	if len(ti.Fields) > 12 {
