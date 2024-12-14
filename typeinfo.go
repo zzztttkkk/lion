@@ -100,7 +100,7 @@ func addfields[M any](fs *[]Field[M], gotype reflect.Type, tagnames []string, pt
 			var _fs []Field[M]
 			addfields(&_fs, sf.Type, tagnames, fptr, begin)
 			*fs = append(*fs, _fs...)
-			return
+			continue
 		}
 		field := Field[M]{
 			Name:   gettagname(tag),
