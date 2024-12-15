@@ -29,8 +29,8 @@ func BenchmarkNormalGetFieldPtrByIndex(b *testing.B) {
 
 	vv := reflect.ValueOf(&val).Elem()
 	for i := 0; i < b.N; i++ {
-		fv := vv.FieldByIndex(a1Field.Index).Addr().Interface()
-		noop(fv)
+		fptr := vv.FieldByIndex(a1Field.Index).Addr().Interface()
+		noop(fptr)
 	}
 }
 
@@ -39,8 +39,19 @@ func BenchmarkGetFieldPtrByOffset(b *testing.B) {
 	valptr := unsafe.Pointer(&val)
 
 	for i := 0; i < b.N; i++ {
-		fv := reflect.NewAt(a1Field.Type, unsafe.Add(valptr, a1offset)).Interface()
-		noop(fv)
+		fptr := reflect.NewAt(a1Field.Type, unsafe.Add(valptr, a1offset)).Interface()
+		noop(fptr)
+	}
+}
+
+func BenchmarkGetFieldPtrByMethod(b *testing.B) {
+	a1ptrgetter := FieldOf[A, struct{}](&(Ptr[A]().A1)).PtrGetter()
+
+	val := A{}
+	valptr := unsafe.Pointer(&val)
+	for i := 0; i < b.N; i++ {
+		fptr := a1ptrgetter(valptr)
+		noop(fptr)
 	}
 }
 
@@ -49,7 +60,7 @@ func BenchmarkGetFieldPtrByOffsetAndTypecast(b *testing.B) {
 	valptr := unsafe.Pointer(&val)
 
 	for i := 0; i < b.N; i++ {
-		fv := (*string)(unsafe.Add(valptr, a1offset))
-		noop(fv)
+		fptr := (*string)(unsafe.Add(valptr, a1offset))
+		noop(fptr)
 	}
 }
