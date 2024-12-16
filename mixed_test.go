@@ -1,36 +1,42 @@
-package reflectx
+package reflectx_test
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/zzztttkkk/reflectx"
 )
 
 func init() {
-	RegisterOf[EmptyMeta]().TagNames("json").Unexposed()
+	reflectx.RegisterOf[reflectx.EmptyMeta]().TagNames("json").Unexposed()
 }
 
-type _Common struct {
-	a string
+type _CommonA struct {
+	A string `json:"a"`
 	B string `json:"b"`
 }
 
 func init() {
-	ptr := Ptr[_Common]()
-	FieldOf[_Common, EmptyMeta](&ptr.a).Name = "common_a"
+	ptr := reflectx.Ptr[_CommonA]()
+	reflectx.FieldOf[_CommonA, reflectx.EmptyMeta](&ptr.A).SetName("common_a")
 }
 
-type User struct {
+type _X struct {
+	_CommonA
+}
+
+type UserA struct {
 	A string `json:"a1"`
-	_Common
-}
-
-func init() {
-	ptr := Ptr[User]()
-	TypeInfoOf[User, EmptyMeta]().Mix(&ptr._Common, TypeInfoOf[_Common, EmptyMeta]())
+	_CommonA
+	_X
 }
 
 func TestMixed(t *testing.T) {
-	ptr := Ptr[User]()
-	field := FieldOf[User, EmptyMeta](&ptr._Common.a)
-	fmt.Println(field)
+	ptr := reflectx.Ptr[UserA]()
+
+	field1 := reflectx.FieldOf[UserA, reflectx.EmptyMeta](&ptr._CommonA.A)
+	fmt.Println(field1.StructField(), field1.Offset())
+	field2 := reflectx.FieldOf[UserA, reflectx.EmptyMeta](&(ptr._X._CommonA.A))
+	fmt.Println(field2.StructField(), field2.Offset())
+	fmt.Println(field1.StructField() == field2.StructField())
 }

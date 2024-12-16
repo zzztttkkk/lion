@@ -53,12 +53,13 @@ func init() {
 
 func (field *Field[M]) PtrGetter() _FieldPtrGetter {
 	if field.ptrgetter == nil {
-		getter, ok := preparedTypePtrGetters[field.Field.Type]
+		sf := field.StructField()
+		getter, ok := preparedTypePtrGetters[sf.Type]
 		if ok {
-			field.ptrgetter = func(insptr unsafe.Pointer) any { return getter(insptr, field.Offset) }
+			field.ptrgetter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
 		} else {
 			field.ptrgetter = func(insptr unsafe.Pointer) any {
-				return reflect.NewAt(field.Field.Type, unsafe.Add(insptr, field.Offset)).Interface()
+				return reflect.NewAt(field.field.Type, unsafe.Add(insptr, field.offset)).Interface()
 			}
 		}
 	}

@@ -35,17 +35,17 @@ type User struct {
 
 func init() {
 	ptr := reflectx.Ptr[User]()
-	VldField[User](&ptr.Age).Meta = &VldMetainfo{Regexp: "age"}
+	VldField[User](&ptr.Age).UpdateMetainfo(&VldMetainfo{Regexp: "age"})
 }
 
 func TestTypeinfoOf(t *testing.T) {
 	obj := &User{}
 	objptr := unsafe.Pointer(obj)
 
-	VldField[User](&(reflectx.Ptr[User]()).Age).Set(objptr, 12)
-	VldField[User](&(reflectx.Ptr[User]()).Name).Set(objptr, "ztk")
-	VldField[User](&(reflectx.Ptr[User]()).CreatedAt).Set(objptr, int64(34))
-	VldField[User](&(reflectx.Ptr[User]())._DeletedAt).Set(objptr, int64(134))
+	VldField[User](&(reflectx.Ptr[User]()).Age).ChangeInstance(objptr, 12)
+	VldField[User](&(reflectx.Ptr[User]()).Name).ChangeInstance(objptr, "ztk")
+	VldField[User](&(reflectx.Ptr[User]()).CreatedAt).ChangeInstance(objptr, int64(34))
+	VldField[User](&(reflectx.Ptr[User]())._DeletedAt).ChangeInstance(objptr, int64(134))
 
 	deleted_at_ptr := VldField[User](&(reflectx.Ptr[User]())._DeletedAt).PtrGetter()(objptr).(*int64)
 	fmt.Println(deleted_at_ptr)

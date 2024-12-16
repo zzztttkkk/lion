@@ -35,37 +35,50 @@ func Ptr[T any]() *T {
 	return ptr
 }
 
+func ptrof(gotype reflect.Type) any {
+	pv, ok := ptrs[gotype]
+	if ok {
+		return pv
+	}
+	pv = reflect.New(gotype).Interface()
+	ptrs[gotype] = pv
+	return pv
+}
+
 func Typeof[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
 
 func TypeInfoOf[T any, M any]() *TypeInfo[M] {
 	gotype := Typeof[T]()
-	ti, ok := typeinfos[gotype]
-	if ok {
-		return ti.(*TypeInfo[M])
-	}
 	reg := RegisterOf[M]()
-	obj := makeTypeinfo(reg, gotype, Ptr[T]())
-	typeinfos[gotype] = obj
-	return obj
+	return makeTypeinfo(reg, gotype, Ptr[T]())
 }
 
 func makeTypeinfo[M any](reg *_Register[M], gotype reflect.Type, ptr any) *TypeInfo[M] {
+	tiv, ok := typeinfos[gotype]
+	if ok {
+		return tiv.(*TypeInfo[M])
+	}
+
 	ptrv := reflect.ValueOf(ptr)
 	uptr := ptrv.UnsafePointer()
+
 	ti := &TypeInfo[M]{
 		GoType:    gotype,
 		PtrAny:    ptr,
 		PtrUnsafe: uptr,
 		PtrNum:    int64(uintptr(uptr)),
 	}
-	addfields(reg, &ti.Fields, ti.GoType, ptrv, ti.PtrNum)
+	typeinfos[gotype] = ti
+
+	walk(reg, &ti.Fields, ti.GoType, ptrv, ti.PtrNum)
+
 	if len(ti.Fields) > 15 {
 		ti.offsetmap = map[int64]*Field[M]{}
 		for i := 0; i < len(ti.Fields); i++ {
 			ptr := &ti.Fields[i]
-			ti.offsetmap[ptr.Offset] = ptr
+			ti.offsetmap[ptr.offset] = ptr
 		}
 	}
 	return ti
@@ -86,7 +99,7 @@ func gettag(sf *reflect.StructField, tags ...string) string {
 	return ""
 }
 
-func addfields[M any](reg *_Register[M], fs *[]Field[M], gotype reflect.Type, ptrv reflect.Value, begin int64) {
+func walk[M any](reg *_Register[M], fs *[]Field[M], gotype reflect.Type, ptrv reflect.Value, begin int64) {
 	vv := ptrv.Elem()
 
 	for i := 0; i < gotype.NumField(); i++ {
@@ -101,18 +114,34 @@ func addfields[M any](reg *_Register[M], fs *[]Field[M], gotype reflect.Type, pt
 		fv := vv.Field(i)
 		fptr := fv.Addr()
 		if sf.Anonymous {
-			var _fs []Field[M]
-			addfields(reg, &_fs, sf.Type, fptr, begin)
-			*fs = append(*fs, _fs...)
+			baseoffset := int64(sf.Offset)
+			sti := makeTypeinfo(reg, sf.Type, ptrof(sf.Type))
+
+			for idx := range sti.Fields {
+				stf := &sti.Fields[idx]
+				f := Field[M]{
+					offset: baseoffset + stf.offset,
+				}
+				if stf.ref != nil {
+					f.ref = stf.ref
+				} else {
+					f.ref = stf
+				}
+				*fs = append(*fs, f)
+			}
+
+			// var _fs []Field[M]
+			// walk(reg, &_fs, sf.Type, fptr, begin)
+			// *fs = append(*fs, _fs...)
 			continue
 		}
 		field := Field[M]{
-			Name:   gettagname(tag),
-			Field:  sf,
-			Offset: int64(fptr.Pointer()) - begin,
+			name:   gettagname(tag),
+			field:  sf,
+			offset: int64(fptr.Pointer()) - begin,
 		}
-		if field.Name == "" {
-			field.Name = sf.Name
+		if field.name == "" {
+			field.name = sf.Name
 		}
 		*fs = append(*fs, field)
 	}
@@ -124,7 +153,7 @@ func (ti *TypeInfo[M]) FieldByOffset(offset int64) *Field[M] {
 	}
 	for idx := range ti.Fields {
 		fp := &ti.Fields[idx]
-		if fp.Offset == offset {
+		if fp.offset == offset {
 			return fp
 		}
 	}
