@@ -5,11 +5,15 @@ import (
 	"unsafe"
 )
 
+type _FieldPtrGetter func(insptr unsafe.Pointer) any
+
 type Field[M any] struct {
 	Name   string
 	Offset int64
 	Field  reflect.StructField
 	Meta   *M
+
+	ptrgetter _FieldPtrGetter
 }
 
 func (field *Field[M]) GetPtrValue(insptr unsafe.Pointer) reflect.Value {

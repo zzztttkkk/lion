@@ -91,7 +91,7 @@ func addfields[M any](fs *[]Field[M], gotype reflect.Type, tagnames []string, pt
 	for i := 0; i < gotype.NumField(); i++ {
 		sf := gotype.Field(i)
 		tag := gettag(&sf, tagnames...)
-		if !sf.IsExported() || tag == "-" {
+		if tag == "-" {
 			continue
 		}
 		fv := vv.Field(i)
