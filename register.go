@@ -3,7 +3,8 @@ package reflectx
 import "reflect"
 
 type _Register[M any] struct {
-	tagnames []string
+	tagnames  []string
+	unexposed bool
 }
 
 var (
@@ -24,5 +25,10 @@ func RegisterOf[M any]() *_Register[M] {
 
 func (reg *_Register[M]) TagNames(names ...string) *_Register[M] {
 	reg.tagnames = append(reg.tagnames, names...)
+	return reg
+}
+
+func (reg *_Register[M]) Unexposed() *_Register[M] {
+	reg.unexposed = true
 	return reg
 }

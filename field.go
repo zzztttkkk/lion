@@ -16,16 +16,12 @@ type Field[M any] struct {
 	ptrgetter _FieldPtrGetter
 }
 
-func (field *Field[M]) GetPtrValue(insptr unsafe.Pointer) reflect.Value {
-	return reflect.NewAt(field.Field.Type, unsafe.Add(insptr, field.Offset))
+func (field *Field[M]) PtrValueOf(insptr unsafe.Pointer) reflect.Value {
+	return reflect.ValueOf(field.PtrOf(insptr))
 }
 
-func (field *Field[M]) Set(insptr unsafe.Pointer, val reflect.Value) {
-	field.GetPtrValue(insptr).Elem().Set(val)
-}
-
-func (field *Field[M]) SetAny(insptr unsafe.Pointer, val any) {
-	field.Set(insptr, reflect.ValueOf(val))
+func (field *Field[M]) Set(insptr unsafe.Pointer, val any) {
+	field.PtrValueOf(insptr).Elem().Set(reflect.ValueOf(val))
 }
 
 func FieldOf[T any, M any](ptr any) *Field[M] {

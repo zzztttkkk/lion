@@ -45,12 +45,12 @@ func TypeInfoOf[T any, M any]() *TypeInfo[M] {
 		return ti.(*TypeInfo[M])
 	}
 	reg := RegisterOf[M]()
-	obj := makeTypeinfo[M](reg.tagnames, gotype, Ptr[T]())
+	obj := makeTypeinfo(reg, gotype, Ptr[T]())
 	typeinfos[gotype] = obj
 	return obj
 }
 
-func makeTypeinfo[M any](tagnames []string, gotype reflect.Type, ptr any) *TypeInfo[M] {
+func makeTypeinfo[M any](reg *_Register[M], gotype reflect.Type, ptr any) *TypeInfo[M] {
 	ptrv := reflect.ValueOf(ptr)
 	uptr := ptrv.UnsafePointer()
 	ti := &TypeInfo[M]{
@@ -59,8 +59,8 @@ func makeTypeinfo[M any](tagnames []string, gotype reflect.Type, ptr any) *TypeI
 		PtrUnsafe: uptr,
 		PtrNum:    int64(uintptr(uptr)),
 	}
-	addfields(&ti.Fields, ti.GoType, tagnames, ptrv, ti.PtrNum)
-	if len(ti.Fields) > 12 {
+	addfields(reg, &ti.Fields, ti.GoType, ptrv, ti.PtrNum)
+	if len(ti.Fields) > 15 {
 		ti.offsetmap = map[int64]*Field[M]{}
 		for i := 0; i < len(ti.Fields); i++ {
 			ptr := &ti.Fields[i]
@@ -85,20 +85,23 @@ func gettag(sf *reflect.StructField, tags ...string) string {
 	return ""
 }
 
-func addfields[M any](fs *[]Field[M], gotype reflect.Type, tagnames []string, ptrv reflect.Value, begin int64) {
+func addfields[M any](reg *_Register[M], fs *[]Field[M], gotype reflect.Type, ptrv reflect.Value, begin int64) {
 	vv := ptrv.Elem()
 
 	for i := 0; i < gotype.NumField(); i++ {
 		sf := gotype.Field(i)
-		tag := gettag(&sf, tagnames...)
+		tag := gettag(&sf, reg.tagnames...)
 		if tag == "-" {
+			continue
+		}
+		if !reg.unexposed && !sf.IsExported() {
 			continue
 		}
 		fv := vv.Field(i)
 		fptr := fv.Addr()
 		if sf.Anonymous {
 			var _fs []Field[M]
-			addfields(&_fs, sf.Type, tagnames, fptr, begin)
+			addfields(reg, &_fs, sf.Type, fptr, begin)
 			*fs = append(*fs, _fs...)
 			continue
 		}
