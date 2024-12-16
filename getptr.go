@@ -8,13 +8,21 @@ import (
 )
 
 var (
-	builtinTypePtrGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
+	preparedTypePtrGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
 )
 
 func appendType[T any]() {
-	builtinTypePtrGetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*T)(unsafe.Add(insptr, offset)) }
-	builtinTypePtrGetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (**T)(unsafe.Add(insptr, offset)) }
-	builtinTypePtrGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return (*sql.Null[T])(unsafe.Add(insptr, offset)) }
+	preparedTypePtrGetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*T)(unsafe.Add(insptr, offset)) }
+	preparedTypePtrGetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (**T)(unsafe.Add(insptr, offset)) }
+
+	preparedTypePtrGetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]T)(unsafe.Add(insptr, offset)) }
+	preparedTypePtrGetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]*T)(unsafe.Add(insptr, offset)) }
+
+	preparedTypePtrGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return (*sql.Null[T])(unsafe.Add(insptr, offset)) }
+}
+
+func AddType[T any]() {
+	appendType[T]()
 }
 
 func init() {
@@ -45,7 +53,7 @@ func init() {
 
 func (field *Field[M]) PtrGetter() _FieldPtrGetter {
 	if field.ptrgetter == nil {
-		getter, ok := builtinTypePtrGetters[field.Field.Type]
+		getter, ok := preparedTypePtrGetters[field.Field.Type]
 		if ok {
 			field.ptrgetter = func(insptr unsafe.Pointer) any { return getter(insptr, field.Offset) }
 		} else {
