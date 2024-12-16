@@ -6,31 +6,31 @@ import (
 )
 
 func init() {
-	RegisterOf[EmptyMeta]().TagNames("json")
+	RegisterOf[EmptyMeta]().TagNames("json").Unexposed()
 }
 
-type Common struct {
-	A string `json:"a"`
+type _Common struct {
+	a string
 	B string `json:"b"`
 }
 
 func init() {
-	ptr := Ptr[Common]()
-	FieldOf[Common, EmptyMeta](&ptr.A).Name = "common_a"
+	ptr := Ptr[_Common]()
+	FieldOf[_Common, EmptyMeta](&ptr.a).Name = "common_a"
 }
 
 type User struct {
 	A string `json:"a1"`
-	Common
+	_Common
 }
 
 func init() {
 	ptr := Ptr[User]()
-	TypeInfoOf[User, EmptyMeta]().Mixed(&ptr.Common, TypeInfoOf[Common, EmptyMeta]())
+	TypeInfoOf[User, EmptyMeta]().Mix(&ptr._Common, TypeInfoOf[_Common, EmptyMeta]())
 }
 
 func TestMixed(t *testing.T) {
 	ptr := Ptr[User]()
-	field := FieldOf[User, EmptyMeta](&ptr.Common.A)
-	fmt.Println(field.Name)
+	field := FieldOf[User, EmptyMeta](&ptr._Common.a)
+	fmt.Println(field)
 }

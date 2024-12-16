@@ -3,18 +3,16 @@ package reflectx
 import (
 	"fmt"
 	"reflect"
+	"unsafe"
 )
 
-func (ti *TypeInfo[M]) Mixed(ptr any, subti *TypeInfo[M]) {
-	baseoffset := int64(reflect.ValueOf(ptr).UnsafeAddr()) - ti.PtrNum
-	vv := reflect.ValueOf(ti.PtrAny).Elem()
+func (ti *TypeInfo[M]) MixByUnsafePtr(ptr unsafe.Pointer, subti *TypeInfo[M]) *TypeInfo[M] {
+	baseoffset := int64(uintptr(ptr)) - ti.PtrNum
 
 	found := false
 	for i := 0; i < ti.GoType.NumField(); i++ {
 		sf := ti.GoType.Field(i)
-		fptrv := vv.Field(i).Addr().UnsafeAddr()
-		foffset := int64(fptrv) - ti.PtrNum
-		if sf.Anonymous && sf.Type == subti.GoType && foffset == baseoffset {
+		if sf.Anonymous && sf.Type == subti.GoType && int64(sf.Offset) == baseoffset {
 			found = true
 			break
 		}
@@ -25,6 +23,12 @@ func (ti *TypeInfo[M]) Mixed(ptr any, subti *TypeInfo[M]) {
 	for _, subf := range subti.Fields {
 		coffset := baseoffset + subf.Offset
 		fv := ti.FieldByOffset(coffset)
-		*fv = subf
+		fv.Name = subf.Name
+		fv.Meta = subf.Meta
 	}
+	return ti
+}
+
+func (ti *TypeInfo[M]) Mix(ptr any, subti *TypeInfo[M]) *TypeInfo[M] {
+	return ti.MixByUnsafePtr(reflect.ValueOf(ptr).UnsafePointer(), subti)
 }
