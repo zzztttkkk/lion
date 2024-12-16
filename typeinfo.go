@@ -1,6 +1,7 @@
 package reflectx
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -127,7 +128,7 @@ func (ti *TypeInfo[M]) FieldByOffset(offset int64) *Field[M] {
 			return fp
 		}
 	}
-	return nil
+	panic(fmt.Errorf("reflectx: bad offset, %s, %d", ti.GoType, offset))
 }
 
 func (ti *TypeInfo[M]) FieldByUnsafePtr(ptr unsafe.Pointer) *Field[M] {
