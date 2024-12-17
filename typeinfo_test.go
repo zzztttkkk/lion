@@ -2,7 +2,6 @@ package reflectx_test
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 	"unsafe"
 
@@ -42,59 +41,16 @@ func TestTypeinfoOf(t *testing.T) {
 	obj := &User{}
 	objptr := unsafe.Pointer(obj)
 
-	VldField[User](&(reflectx.Ptr[User]()).Age).ChangeInstance(objptr, 12)
-	VldField[User](&(reflectx.Ptr[User]()).Name).ChangeInstance(objptr, "ztk")
-	VldField[User](&(reflectx.Ptr[User]()).CreatedAt).ChangeInstance(objptr, int64(34))
-	VldField[User](&(reflectx.Ptr[User]())._DeletedAt).ChangeInstance(objptr, int64(134))
+	mptr := reflectx.Ptr[User]()
 
-	deleted_at_ptr := VldField[User](&(reflectx.Ptr[User]())._DeletedAt).PtrGetter()(objptr).(*int64)
+	reflectx.Update(obj, VldField[User](&mptr.Age), 12)
+	reflectx.Update(obj, VldField[User](&mptr.Name), "ztk")
+	reflectx.Update(obj, VldField[User](&mptr.CreatedAt), int64(23))
+	reflectx.Update(obj, VldField[User](&mptr._DeletedAt), int64(485))
+
+	deleted_at_ptr := VldField[User](&mptr._DeletedAt).PtrGetter()(objptr).(*int64)
 	fmt.Println(deleted_at_ptr)
 	fmt.Println(obj)
 	*deleted_at_ptr = 455
 	fmt.Println(obj)
-}
-
-type Pair struct {
-	Key int64
-	Val int64
-}
-
-var (
-	lstmap  = []Pair{}
-	hashmap = map[int64]int64{}
-)
-
-func init() {
-	for i := 0; i < 15; i++ {
-		key := rand.Int63()
-		val := rand.Int63()
-		lstmap = append(lstmap, Pair{Key: key, Val: val})
-		hashmap[key] = val
-	}
-
-}
-
-func noop(v any) {}
-
-func BenchmarkReadLstMap(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		key := rand.Int63()
-		for idx := range lstmap {
-			ptr := &lstmap[idx]
-			if ptr.Key == key {
-				noop(ptr.Val)
-				break
-			}
-		}
-	}
-}
-
-func BenchmarkReadHashMap(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		key := rand.Int63()
-		v, ok := hashmap[key]
-		if ok {
-			noop(v)
-		}
-	}
 }

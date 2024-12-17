@@ -39,4 +39,8 @@ func TestMixed(t *testing.T) {
 	field2 := reflectx.FieldOf[UserA, reflectx.EmptyMeta](&(ptr._X._CommonA.A))
 	fmt.Println(field2.StructField(), field2.Offset())
 	fmt.Println(field1.StructField() == field2.StructField())
+
+	for _, v := range reflectx.TypeInfoOf[UserA, reflectx.EmptyMeta]().Fields {
+		fmt.Println(v.String())
+	}
 }

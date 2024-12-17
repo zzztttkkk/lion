@@ -1,6 +1,7 @@
 package reflectx
 
 import (
+	"fmt"
 	"reflect"
 	"unsafe"
 )
@@ -16,12 +17,12 @@ type Field[M any] struct {
 	ptrgetter _FieldPtrGetter
 }
 
-func (field *Field[M]) GetPtrValueOfInstance(insptr unsafe.Pointer) reflect.Value {
-	return reflect.ValueOf(field.PtrOf(insptr))
-}
-
-func (field *Field[M]) ChangeInstance(insptr unsafe.Pointer, val any) {
-	field.GetPtrValueOfInstance(insptr).Elem().Set(reflect.ValueOf(val))
+// Update
+// fast but unsafe, you must know the field's type
+func Update[T any, M any, V any](insptr *T, field *Field[M], val V) {
+	fuptr := unsafe.Add(unsafe.Pointer(insptr), field.offset)
+	fptr := (*V)(fuptr)
+	*fptr = val
 }
 
 func (field *Field[M]) Offset() int64 {
@@ -63,6 +64,11 @@ func (filed *Field[M]) UpdateMetainfo(m *M) {
 		return
 	}
 	filed.ref.meta = m
+}
+
+func (field *Field[M]) String() string {
+	sf := field.StructField()
+	return fmt.Sprintf("Field{Offset: %d, ReflectName: %s, StructName: %s, StructType: %s}", field.Offset(), field.Name(), sf.Name, sf.Type)
 }
 
 func FieldOf[T any, M any](ptr any) *Field[M] {

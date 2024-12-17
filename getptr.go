@@ -11,7 +11,7 @@ var (
 	preparedTypePtrGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
 )
 
-func appendType[T any]() {
+func AppendType[T any]() {
 	preparedTypePtrGetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (**T)(unsafe.Add(insptr, offset)) }
 
@@ -21,36 +21,35 @@ func appendType[T any]() {
 	preparedTypePtrGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return (*sql.Null[T])(unsafe.Add(insptr, offset)) }
 }
 
-func AddType[T any]() {
-	appendType[T]()
-}
-
 func init() {
-	appendType[string]()
-	appendType[[]byte]()
+	AppendType[string]()
+	AppendType[[]byte]()
 
-	appendType[int8]()
-	appendType[int16]()
-	appendType[int32]()
-	appendType[int64]()
+	AppendType[int8]()
+	AppendType[int16]()
+	AppendType[int32]()
+	AppendType[int64]()
 
-	appendType[uint8]()
-	appendType[uint16]()
-	appendType[uint32]()
-	appendType[uint64]()
+	AppendType[uint8]()
+	AppendType[uint16]()
+	AppendType[uint32]()
+	AppendType[uint64]()
 
-	appendType[int]()
-	appendType[uint]()
+	AppendType[int]()
+	AppendType[uint]()
 
-	appendType[float32]()
-	appendType[float64]()
+	AppendType[float32]()
+	AppendType[float64]()
 
-	appendType[bool]()
+	AppendType[bool]()
 
-	appendType[time.Time]()
-	appendType[time.Duration]()
+	AppendType[time.Time]()
+	AppendType[time.Duration]()
 }
 
+// PtrGetter
+// return a function that can get this field ptr from an instance ptr.
+// calling `AppendType[T any]()` with the type of field, will return a faster function.
 func (field *Field[M]) PtrGetter() _FieldPtrGetter {
 	if field.ptrgetter == nil {
 		sf := field.StructField()
