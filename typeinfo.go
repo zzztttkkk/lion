@@ -129,10 +129,6 @@ func walk[M any](reg *_Register[M], fs *[]Field[M], gotype reflect.Type, ptrv re
 				}
 				*fs = append(*fs, f)
 			}
-
-			// var _fs []Field[M]
-			// walk(reg, &_fs, sf.Type, fptr, begin)
-			// *fs = append(*fs, _fs...)
 			continue
 		}
 		field := Field[M]{

@@ -43,10 +43,10 @@ func TestTypeinfoOf(t *testing.T) {
 
 	mptr := reflectx.Ptr[User]()
 
-	reflectx.Update(obj, VldField[User](&mptr.Age), 12)
-	reflectx.Update(obj, VldField[User](&mptr.Name), "ztk")
-	reflectx.Update(obj, VldField[User](&mptr.CreatedAt), int64(23))
-	reflectx.Update(obj, VldField[User](&mptr._DeletedAt), int64(485))
+	VldField[User](&mptr.Age).ChangeInstance(objptr, 12)
+	VldField[User](&mptr.Name).ChangeInstance(objptr, "ztk")
+	VldField[User](&mptr.CreatedAt).ChangeInstance(objptr, int64(32))
+	VldField[User](&mptr._DeletedAt).ChangeInstance(objptr, int64(45))
 
 	deleted_at_ptr := VldField[User](&mptr._DeletedAt).PtrGetter()(objptr).(*int64)
 	fmt.Println(deleted_at_ptr)

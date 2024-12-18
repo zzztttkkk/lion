@@ -15,14 +15,21 @@ type Field[M any] struct {
 	field     reflect.StructField
 	meta      *M
 	ptrgetter _FieldPtrGetter
+	setter    func(insptr unsafe.Pointer, val any)
 }
 
-// Update
+// UnsafeUpdate
 // fast but unsafe, you must know the field's type
-func Update[T any, M any, V any](insptr *T, field *Field[M], val V) {
+func UnsafeUpdate[T any, M any, V any](insptr *T, field *Field[M], val V) {
 	fuptr := unsafe.Add(unsafe.Pointer(insptr), field.offset)
 	fptr := (*V)(fuptr)
 	*fptr = val
+}
+
+// UnsafeFieldPtr
+// same as `UnsafeUpdate`
+func UnsafeFieldPtr[T any, M any, V any](insptr *T, field *Field[M]) *V {
+	return (*V)(unsafe.Add(unsafe.Pointer(insptr), field.offset))
 }
 
 func (field *Field[M]) Offset() int64 {

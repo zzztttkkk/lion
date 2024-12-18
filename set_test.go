@@ -8,9 +8,12 @@ import (
 	"github.com/zzztttkkk/reflectx"
 )
 
+type unpreparedInt int32
+
 type SetTest struct {
 	A int
 	B int64
+	C unpreparedInt
 }
 
 func BenchmarkDirectlySet(b *testing.B) {
@@ -22,18 +25,18 @@ func BenchmarkDirectlySet(b *testing.B) {
 	}
 }
 
-func BenchmarkUpdate(b *testing.B) {
+func BenchmarkUnsafeUpdate(b *testing.B) {
 	mptr := reflectx.Ptr[SetTest]()
 	fieldOfA := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.A)
 
 	var obj SetTest
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		reflectx.Update(&obj, fieldOfA, 12)
+		reflectx.UnsafeUpdate(&obj, fieldOfA, 12)
 	}
 }
 
-func BenchmarkFieldPtrSet(b *testing.B) {
+func BenchmarkPtrSet(b *testing.B) {
 	mptr := reflectx.Ptr[SetTest]()
 	fieldOfA := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.A)
 
@@ -41,19 +44,44 @@ func BenchmarkFieldPtrSet(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ptr := fieldOfA.PtrOf(unsafe.Pointer(&obj)).(*int)
+		ptr := fieldOfA.PtrOfInstance(unsafe.Pointer(&obj)).(*int)
 		*ptr = 12
+	}
+}
+
+func BenchmarkChangeInstance(b *testing.B) {
+	mptr := reflectx.Ptr[SetTest]()
+	fieldOfA := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.A)
+
+	var obj SetTest
+	var objptr = unsafe.Pointer(&obj)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		fieldOfA.ChangeInstance(objptr, 12)
+	}
+}
+
+func BenchmarkChangeInstanceForUnpreparedType(b *testing.B) {
+	mptr := reflectx.Ptr[SetTest]()
+	fieldOfC := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.C)
+
+	var obj SetTest
+	var objptr = unsafe.Pointer(&obj)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		fieldOfC.ChangeInstance(objptr, unpreparedInt(12))
 	}
 }
 
 func BenchmarkNormalReflectSet(b *testing.B) {
 	obj := &SetTest{}
-	objv := reflect.ValueOf(obj).Elem()
-	fv := objv.FieldByName("A")
 
 	b.ResetTimer()
-	numv := reflect.ValueOf(345)
 	for i := 0; i < b.N; i++ {
-		fv.Set(numv)
+		objv := reflect.ValueOf(obj).Elem()
+		fv := objv.Field(0)
+		fv.Set(reflect.ValueOf(345))
 	}
 }
