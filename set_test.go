@@ -1,11 +1,11 @@
-package reflectx_test
+package lion_test
 
 import (
 	"reflect"
 	"testing"
 	"unsafe"
 
-	"github.com/zzztttkkk/reflectx"
+	"github.com/zzztttkkk/lion"
 )
 
 type unpreparedInt int32
@@ -26,19 +26,19 @@ func BenchmarkDirectlySet(b *testing.B) {
 }
 
 func BenchmarkUnsafeUpdate(b *testing.B) {
-	mptr := reflectx.Ptr[SetTest]()
-	fieldOfA := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.A)
+	mptr := lion.Ptr[SetTest]()
+	fieldOfA := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.A)
 
 	var obj SetTest
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		reflectx.UnsafeUpdate(&obj, fieldOfA, 12)
+		lion.UnsafeUpdate(&obj, fieldOfA, 12)
 	}
 }
 
 func BenchmarkPtrSet(b *testing.B) {
-	mptr := reflectx.Ptr[SetTest]()
-	fieldOfA := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.A)
+	mptr := lion.Ptr[SetTest]()
+	fieldOfA := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.A)
 
 	var obj SetTest
 	b.ResetTimer()
@@ -50,8 +50,8 @@ func BenchmarkPtrSet(b *testing.B) {
 }
 
 func BenchmarkChangeInstance(b *testing.B) {
-	mptr := reflectx.Ptr[SetTest]()
-	fieldOfA := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.A)
+	mptr := lion.Ptr[SetTest]()
+	fieldOfA := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.A)
 
 	var obj SetTest
 	var objptr = unsafe.Pointer(&obj)
@@ -63,8 +63,8 @@ func BenchmarkChangeInstance(b *testing.B) {
 }
 
 func BenchmarkChangeInstanceForUnpreparedType(b *testing.B) {
-	mptr := reflectx.Ptr[SetTest]()
-	fieldOfC := reflectx.FieldOf[SetTest, reflectx.EmptyMeta](&mptr.C)
+	mptr := lion.Ptr[SetTest]()
+	fieldOfC := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.C)
 
 	var obj SetTest
 	var objptr = unsafe.Pointer(&obj)

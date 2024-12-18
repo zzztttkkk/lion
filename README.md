@@ -1,9 +1,10 @@
-# reflectx
+# lion
 
-reflection is useful, but I do't like complex tag.
+reflection is useful, but I do't like complex tags.
+
+[`lion`](https://www.dota2.com/hero/lion) is a character of Dota2, kind of evil and cute. Just like this package.
 
 ```go
-
 type User struct {
     Name string `opts:"name"`
     Age int `opts:"age"`
@@ -16,23 +17,23 @@ type Options struct {
 
 // 2. set tag name
 func init(){
-    reflectx.RegisterOf[Options]().TagNames("opts")
+    lion.RegisterOf[Options]().TagNames("opts")
 }
 
 // 3. set metainfo
 func init() {
-    ptr := reflectx.Ptr[User]()
+    ptr := lion.Ptr[User]()
 
-    reflectx.FieldOf[User, Options](&ptr.Name).Meta = &Options{Info : "balabala"}
+    lion.FieldOf[User, Options](&ptr.Name).Meta = &Options{Info : "balabala"}
 }
 
 // 4. read metainfo
 
 // get typeinfo
-reflectx.TypeinfoOf[User, Options]()
+lion.TypeinfoOf[User, Options]()
 
 // get fieldinfo
-reflectx.FieldOf[User, Options](&(reflectx.Ptr[User]().Name))
+lion.FieldOf[User, Options](&(reflectx.Ptr[User]().Name))
 ```
 
 # !!!!

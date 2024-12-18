@@ -1,14 +1,14 @@
-package reflectx_test
+package lion_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/zzztttkkk/reflectx"
+	"github.com/zzztttkkk/lion"
 )
 
 func init() {
-	reflectx.RegisterOf[reflectx.EmptyMeta]().TagNames("json").Unexposed()
+	lion.RegisterOf[lion.EmptyMeta]().TagNames("json").Unexposed()
 }
 
 type _CommonA struct {
@@ -17,8 +17,8 @@ type _CommonA struct {
 }
 
 func init() {
-	ptr := reflectx.Ptr[_CommonA]()
-	reflectx.FieldOf[_CommonA, reflectx.EmptyMeta](&ptr.A).SetName("common_a")
+	ptr := lion.Ptr[_CommonA]()
+	lion.FieldOf[_CommonA, lion.EmptyMeta](&ptr.A).SetName("common_a")
 }
 
 type _X struct {
@@ -32,15 +32,15 @@ type UserA struct {
 }
 
 func TestMixed(t *testing.T) {
-	ptr := reflectx.Ptr[UserA]()
+	ptr := lion.Ptr[UserA]()
 
-	field1 := reflectx.FieldOf[UserA, reflectx.EmptyMeta](&ptr._CommonA.A)
+	field1 := lion.FieldOf[UserA, lion.EmptyMeta](&ptr._CommonA.A)
 	fmt.Println(field1.StructField(), field1.Offset())
-	field2 := reflectx.FieldOf[UserA, reflectx.EmptyMeta](&(ptr._X._CommonA.A))
+	field2 := lion.FieldOf[UserA, lion.EmptyMeta](&(ptr._X._CommonA.A))
 	fmt.Println(field2.StructField(), field2.Offset())
 	fmt.Println(field1.StructField() == field2.StructField())
 
-	for _, v := range reflectx.TypeInfoOf[UserA, reflectx.EmptyMeta]().Fields {
+	for _, v := range lion.TypeInfoOf[UserA, lion.EmptyMeta]().Fields {
 		fmt.Println(v.String())
 	}
 }

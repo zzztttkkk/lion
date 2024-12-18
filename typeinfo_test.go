@@ -1,11 +1,11 @@
-package reflectx_test
+package lion_test
 
 import (
 	"fmt"
 	"testing"
 	"unsafe"
 
-	"github.com/zzztttkkk/reflectx"
+	"github.com/zzztttkkk/lion"
 )
 
 type VldMetainfo struct {
@@ -13,11 +13,11 @@ type VldMetainfo struct {
 }
 
 func init() {
-	reflectx.RegisterOf[VldMetainfo]().TagNames("vld").Unexposed()
+	lion.RegisterOf[VldMetainfo]().TagNames("vld").Unexposed()
 }
 
-func VldField[T any](ptr any) *reflectx.Field[VldMetainfo] {
-	return reflectx.FieldOf[T, VldMetainfo](ptr)
+func VldField[T any](ptr any) *lion.Field[VldMetainfo] {
+	return lion.FieldOf[T, VldMetainfo](ptr)
 }
 
 type _Common struct {
@@ -33,7 +33,7 @@ type User struct {
 }
 
 func init() {
-	ptr := reflectx.Ptr[User]()
+	ptr := lion.Ptr[User]()
 	VldField[User](&ptr.Age).UpdateMetainfo(&VldMetainfo{Regexp: "age"})
 }
 
@@ -41,7 +41,7 @@ func TestTypeinfoOf(t *testing.T) {
 	obj := &User{}
 	objptr := unsafe.Pointer(obj)
 
-	mptr := reflectx.Ptr[User]()
+	mptr := lion.Ptr[User]()
 
 	VldField[User](&mptr.Age).ChangeInstance(objptr, 12)
 	VldField[User](&mptr.Name).ChangeInstance(objptr, "ztk")
