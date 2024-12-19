@@ -114,6 +114,9 @@ func walk[M any](reg *_Register[M], fs *[]Field[M], gotype reflect.Type, ptrv re
 		fv := vv.Field(i)
 		fptr := fv.Addr()
 		if sf.Anonymous {
+			if sf.Type.Kind() != reflect.Struct {
+				panic(fmt.Errorf("lion: pointer emmbed struct is not supported. %s.%s", gotype, sf.Type))
+			}
 			baseoffset := int64(sf.Offset)
 			sti := makeTypeinfo(reg, sf.Type, ptrof(sf.Type))
 
