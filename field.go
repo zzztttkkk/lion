@@ -15,6 +15,7 @@ type Field[M any] struct {
 	field     reflect.StructField
 	meta      *M
 	ptrgetter _FieldPtrGetter
+	getter    _FieldPtrGetter
 	setter    func(insptr unsafe.Pointer, val any)
 }
 

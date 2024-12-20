@@ -48,6 +48,8 @@ func TestTypeinfoOf(t *testing.T) {
 	VldField[User](&mptr.CreatedAt).ChangeInstance(objptr, int64(32))
 	VldField[User](&mptr._DeletedAt).ChangeInstance(objptr, int64(45))
 
+	fmt.Println(VldField[User](&mptr._DeletedAt).ValueOfInstance(objptr).(int64) == 45)
+
 	deleted_at_ptr := VldField[User](&mptr._DeletedAt).PtrGetter()(objptr).(*int64)
 	fmt.Println(deleted_at_ptr)
 	fmt.Println(obj)

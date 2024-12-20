@@ -9,38 +9,46 @@ import (
 )
 
 var (
-	preparedTypePtrGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
-	preparedTypePtrSetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64, val any){}
+	preparedTypePtrGetters   = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
+	preparedTypeValueGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
+	preparedTypeSetters      = map[reflect.Type]func(insptr unsafe.Pointer, offset int64, val any){}
 )
 
 // AppendType
 // You can noly call this function in `init`, because there is no mutex here.
 func AppendType[T any]() {
-	// getters
+	// ptr getters
 	preparedTypePtrGetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (**T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]*T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return (*sql.Null[T])(unsafe.Add(insptr, offset)) }
 
+	// value getters
+	preparedTypeValueGetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*T)(unsafe.Add(insptr, offset)) }
+	preparedTypeValueGetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(**T)(unsafe.Add(insptr, offset)) }
+	preparedTypeValueGetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*[]T)(unsafe.Add(insptr, offset)) }
+	preparedTypeValueGetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*[]*T)(unsafe.Add(insptr, offset)) }
+	preparedTypeValueGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*sql.Null[T])(unsafe.Add(insptr, offset)) }
+
 	// setters
-	preparedTypePtrSetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
+	preparedTypeSetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*T)(unsafe.Add(insptr, offset))
 		*fptr = (val.(T))
 	}
-	preparedTypePtrSetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
+	preparedTypeSetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (**T)(unsafe.Add(insptr, offset))
 		*fptr = (val.(*T))
 	}
-	preparedTypePtrSetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
+	preparedTypeSetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*[]T)(unsafe.Add(insptr, offset))
 		*fptr = (val.([]T))
 	}
-	preparedTypePtrSetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
+	preparedTypeSetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*[]*T)(unsafe.Add(insptr, offset))
 		*fptr = (val.([]*T))
 	}
-	preparedTypePtrSetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64, val any) {
+	preparedTypeSetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*sql.Null[T])(unsafe.Add(insptr, offset))
 		*fptr = (val.(sql.Null[T]))
 	}
@@ -106,10 +114,28 @@ func (field *Field[M]) PtrGetter() _FieldPtrGetter {
 
 func (field *Field[M]) PtrOfInstance(insptr unsafe.Pointer) any { return field.PtrGetter()(insptr) }
 
+func (field *Field[M]) Getter() _FieldPtrGetter {
+	if field.getter == nil {
+		sf := field.StructField()
+		getter, ok := preparedTypeValueGetters[sf.Type]
+		if ok {
+			field.getter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
+		} else {
+			warnningForType(sf.Type)
+			field.getter = func(insptr unsafe.Pointer) any {
+				return reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Interface()
+			}
+		}
+	}
+	return field.getter
+}
+
+func (field *Field[M]) ValueOfInstance(insptr unsafe.Pointer) any { return field.Getter()(insptr) }
+
 func (field *Field[M]) Setter() func(insptr unsafe.Pointer, val any) {
 	if field.setter == nil {
 		sf := field.StructField()
-		setter, ok := preparedTypePtrSetters[sf.Type]
+		setter, ok := preparedTypeSetters[sf.Type]
 		if ok {
 			field.setter = func(insptr unsafe.Pointer, val any) {
 				setter(insptr, field.offset, val)
