@@ -5,6 +5,7 @@ import "reflect"
 type _Register[M any] struct {
 	tagnames  []string
 	unexposed bool
+	typeinfos map[reflect.Type]*TypeInfo[M]
 }
 
 var (
@@ -13,12 +14,11 @@ var (
 
 func RegisterOf[M any]() *_Register[M] {
 	gotype := Typeof[M]()
-
 	v, ok := registers[gotype]
 	if ok {
 		return v.(*_Register[M])
 	}
-	obj := &_Register[M]{}
+	obj := &_Register[M]{typeinfos: map[reflect.Type]*TypeInfo[M]{}}
 	registers[gotype] = obj
 	return obj
 }

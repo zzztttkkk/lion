@@ -20,8 +20,7 @@ type TypeInfo[M any] struct {
 }
 
 var (
-	typeinfos = map[reflect.Type]any{}
-	ptrs      = map[reflect.Type]any{}
+	ptrs = map[reflect.Type]any{}
 )
 
 func Ptr[T any]() *T {
@@ -56,9 +55,9 @@ func TypeInfoOf[T any, M any]() *TypeInfo[M] {
 }
 
 func makeTypeinfo[M any](reg *_Register[M], gotype reflect.Type, ptr any) *TypeInfo[M] {
-	tiv, ok := typeinfos[gotype]
+	tiv, ok := reg.typeinfos[gotype]
 	if ok {
-		return tiv.(*TypeInfo[M])
+		return tiv
 	}
 
 	ptrv := reflect.ValueOf(ptr)
@@ -70,7 +69,7 @@ func makeTypeinfo[M any](reg *_Register[M], gotype reflect.Type, ptr any) *TypeI
 		PtrUnsafe: uptr,
 		PtrNum:    int64(uintptr(uptr)),
 	}
-	typeinfos[gotype] = ti
+	reg.typeinfos[gotype] = ti
 
 	walk(reg, &ti.Fields, ti.GoType, ptrv, ti.PtrNum)
 
