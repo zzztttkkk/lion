@@ -55,4 +55,8 @@ func TestTypeinfoOf(t *testing.T) {
 	fmt.Println(obj)
 	*deleted_at_ptr = 455
 	fmt.Println(obj)
+
+	for v := range lion.TypeInfoOf[User, VldMetainfo]().EachField() {
+		fmt.Println(v)
+	}
 }

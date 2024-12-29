@@ -2,6 +2,7 @@ package lion
 
 import (
 	"fmt"
+	"iter"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -164,4 +165,15 @@ func (ti *TypeInfo[M]) FieldByUnsafePtr(ptr unsafe.Pointer) *Field[M] {
 
 func (ti *TypeInfo[M]) FieldByPtr(ptr any) *Field[M] {
 	return ti.FieldByUnsafePtr(reflect.ValueOf(ptr).UnsafePointer())
+}
+
+func (ti *TypeInfo[M]) EachField() iter.Seq[*Field[M]] {
+	return func(yield func(*Field[M]) bool) {
+		fc := len(ti.Fields)
+		for i := 0; i < fc; i++ {
+			if !yield(&(ti.Fields[i])) {
+				break
+			}
+		}
+	}
 }

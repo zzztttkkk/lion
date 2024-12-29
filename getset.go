@@ -34,23 +34,23 @@ func AppendType[T any]() {
 	// setters
 	preparedTypeSetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*T)(unsafe.Add(insptr, offset))
-		*fptr = (val.(T))
+		*fptr = *(anytotype[T](val))
 	}
 	preparedTypeSetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (**T)(unsafe.Add(insptr, offset))
-		*fptr = (val.(*T))
+		*fptr = *(anytotype[*T](val))
 	}
 	preparedTypeSetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*[]T)(unsafe.Add(insptr, offset))
-		*fptr = (val.([]T))
+		*fptr = *(anytotype[[]T](val))
 	}
 	preparedTypeSetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*[]*T)(unsafe.Add(insptr, offset))
-		*fptr = (val.([]*T))
+		*fptr = *(anytotype[[]*T](val))
 	}
 	preparedTypeSetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*sql.Null[T])(unsafe.Add(insptr, offset))
-		*fptr = (val.(sql.Null[T]))
+		*fptr = *(anytotype[sql.Null[T]](val))
 	}
 }
 
