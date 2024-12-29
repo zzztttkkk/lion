@@ -81,6 +81,10 @@ func makeTypeinfo[M any](reg *_Register[M], gotype reflect.Type, ptr any) *TypeI
 			ti.offsetmap[ptr.offset] = ptr
 		}
 	}
+	for f := range ti.EachField() {
+		f.Getter()
+		f.Setter()
+	}
 	return ti
 }
 

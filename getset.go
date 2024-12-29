@@ -34,23 +34,23 @@ func AppendType[T any]() {
 	// setters
 	preparedTypeSetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*T)(unsafe.Add(insptr, offset))
-		*fptr = *(anytotype[T](val))
+		*fptr = (val.(T))
 	}
 	preparedTypeSetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (**T)(unsafe.Add(insptr, offset))
-		*fptr = *(anytotype[*T](val))
+		*fptr = (val.(*T))
 	}
 	preparedTypeSetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*[]T)(unsafe.Add(insptr, offset))
-		*fptr = *(anytotype[[]T](val))
+		*fptr = (val.([]T))
 	}
 	preparedTypeSetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*[]*T)(unsafe.Add(insptr, offset))
-		*fptr = *(anytotype[[]*T](val))
+		*fptr = (val.([]*T))
 	}
 	preparedTypeSetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64, val any) {
 		fptr := (*sql.Null[T])(unsafe.Add(insptr, offset))
-		*fptr = *(anytotype[sql.Null[T]](val))
+		*fptr = (val.(sql.Null[T]))
 	}
 }
 
@@ -90,7 +90,7 @@ func warnningForType(gotype reflect.Type) {
 		return
 	}
 	warnningedTypes[gotype] = EmptyMeta{}
-	fmt.Printf("reflectx.warnning: reflectx.AppendType[%s]() is not called, please call it to improve performance\r\n", gotype)
+	fmt.Printf("lion.warnning: please call `lion.AppendType[%s]()` to improve performance\r\n", gotype)
 }
 
 // PtrGetter
