@@ -9,6 +9,7 @@ import (
 type _FieldPtrGetter func(insptr unsafe.Pointer) any
 
 type Field[M any] struct {
+	typeinfo  *TypeInfo[M]
 	offset    int64
 	ref       *Field[M]
 	name      string
@@ -17,6 +18,10 @@ type Field[M any] struct {
 	ptrgetter _FieldPtrGetter
 	getter    _FieldPtrGetter
 	setter    func(insptr unsafe.Pointer, val any)
+}
+
+func (field *Field[M]) Typeinfo() *TypeInfo[M] {
+	return field.typeinfo
 }
 
 // UnsafeUpdate
