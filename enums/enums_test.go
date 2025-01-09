@@ -10,11 +10,16 @@ import (
 type X int
 
 const (
-	X1 X = (iota)
-	X2
-	X3
-	X4
-	X6
+	X_1 X = (iota)
+	X_2
+	X_3
+	X_
+	X_4
+	X_6
+	X_7
+	X_8
+	X_9
+	X_10
 )
 
 var (
@@ -22,15 +27,18 @@ var (
 )
 
 func init() {
-	enums.Generate(func() *enums.EnumOptions[X] {
-		return &enums.EnumOptions[X]{
-			NamePrefix: "X",
+	enums.Generate(func() *enums.Options[X] {
+		return &enums.Options[X]{
+			SkilModTimeCheck:   true,
+			RemoveCommonPrefix: true,
+			AddPrefix:          "_XX",
 			NameOverwrites: map[X]string{
-				X6: "Six",
+				X_6: "Six",
 			},
-			GenAllSlice: true,
-			// AllSliceNotPreDefined: true,
+			AllSlice:     true,
 			AllSliceName: "AllXValues",
+			Sql:          true,
+			JSON:         true,
 		}
 	})
 }
