@@ -2,6 +2,7 @@ package enums_test
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/zzztttkkk/lion/enums"
@@ -44,5 +45,6 @@ func init() {
 }
 
 func TestEnums(t *testing.T) {
+	fmt.Println(filepath.Abs("d:/xxx/aaa"))
 	fmt.Println(AllXValues)
 }

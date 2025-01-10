@@ -5,6 +5,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -110,6 +111,14 @@ func Generate[T lion.IntType](fnc func() *Options[T]) {
 	}
 	filename, _ := runtimefunc.FileLine(0)
 	dirname := filepath.Dir(filename)
+
+	outs, err := exec.Command("go", "env", "GOMODCACHE").Output()
+	if err != nil {
+		panic(fmt.Errorf("lion.enums: exec `go env GOMODCACHE` failed, %s", err))
+	}
+	if strings.HasPrefix(filename, strings.TrimSpace(string(outs))) {
+		return
+	}
 
 	testsuf := ""
 	if strings.HasSuffix(filename, "_test.go") {
