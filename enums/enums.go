@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/zzztttkkk/lion"
+	"github.com/zzztttkkk/lion/flags"
 )
 
 type Options[T lion.IntType] struct {
@@ -107,6 +108,10 @@ func inmodcache(fp string) bool {
 }
 
 func Generate[T lion.IntType](fnc func() *Options[T]) {
+	if flags.DisableInitTimeCodeGeneration != "" {
+		return
+	}
+
 	enumtype := lion.Typeof[T]()
 	enumpkgpath := enumtype.PkgPath()
 	enumpkgname := path.Base(enumpkgpath)
