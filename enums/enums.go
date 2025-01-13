@@ -116,7 +116,9 @@ func Generate[T lion.IntType](fnc func() *Options[T]) {
 	if err != nil {
 		panic(fmt.Errorf("lion.enums: exec `go env GOMODCACHE` failed, %s", err))
 	}
-	if strings.HasPrefix(filename, strings.TrimSpace(string(outs))) {
+	modcache, _ := filepath.Abs(strings.TrimSpace(string(outs)))
+	fmt.Println(">>>>>>>>>>>>>>Modcahce", modcache, "\r\n>>>>>>>>Filename", filename)
+	if strings.HasPrefix(filename, modcache) {
 		return
 	}
 
