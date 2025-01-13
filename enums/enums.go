@@ -96,6 +96,16 @@ outer:
 	return string(tmp)
 }
 
+func inmodcache(fp string) bool {
+	outs, err := exec.Command("go", "env", "GOMODCACHE").Output()
+	if err != nil {
+		panic(fmt.Errorf("lion.enums: exec `go env GOMODCACHE` failed, %s", err))
+	}
+	modcache, _ := filepath.Abs(strings.TrimSpace(string(outs)))
+	fpabs, _ := filepath.Abs(fp)
+	return strings.HasPrefix(fpabs, modcache)
+}
+
 func Generate[T lion.IntType](fnc func() *Options[T]) {
 	enumtype := lion.Typeof[T]()
 	enumpkgpath := enumtype.PkgPath()
@@ -111,14 +121,7 @@ func Generate[T lion.IntType](fnc func() *Options[T]) {
 	}
 	filename, _ := runtimefunc.FileLine(0)
 	dirname := filepath.Dir(filename)
-
-	outs, err := exec.Command("go", "env", "GOMODCACHE").Output()
-	if err != nil {
-		panic(fmt.Errorf("lion.enums: exec `go env GOMODCACHE` failed, %s", err))
-	}
-	modcache, _ := filepath.Abs(strings.TrimSpace(string(outs)))
-	fmt.Println(">>>>>>>>>>>>>>Modcahce", modcache, "\r\n>>>>>>>>Filename", filename)
-	if strings.HasPrefix(filename, modcache) {
+	if inmodcache(filename) {
 		return
 	}
 
