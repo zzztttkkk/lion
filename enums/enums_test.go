@@ -11,7 +11,7 @@ import (
 type X int
 
 const (
-	X_1 X = (iota)
+	X_1 = X(iota)
 	X_2
 	X_3
 	X_

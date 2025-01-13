@@ -144,7 +144,6 @@ func Generate[T lion.IntType](fnc func() *Options[T]) {
 	}
 
 	fset := token.NewFileSet()
-
 	pkgs, err := parser.ParseDir(fset, dirname, nil, 0)
 	if err != nil {
 		panic(err)
@@ -162,26 +161,8 @@ func Generate[T lion.IntType](fnc func() *Options[T]) {
 		_PopulateEnumInfo(enums, file)
 	}
 	if len(info.Consts) < 1 {
-		panic(fmt.Errorf(`lion.enums: failed to scan enum values of '%s', you must define enum values like:
-"""
-const (
-		A EnumType = iota
-		B
-		C
-		.... 
-)
-"""
-not:
-"""
-const (
-		A = EnumType(iota)
-		B
-		C
-		.... 
-)
-"""`, enumtype))
+		panic(fmt.Errorf(`lion.enums: empty enum values of '%s'`, enumtype))
 	}
-
 	genGoCode(info, enumpkgname, targetfp, opts)
 }
 

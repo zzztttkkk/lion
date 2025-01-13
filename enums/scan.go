@@ -41,8 +41,20 @@ func _PopulateEnumInfo(enumTypesMap map[string]*_EnumInfo, file *ast.File) {
 		var enumInfo *_EnumInfo
 		for _, spec := range genDecl.Specs {
 			valSpec := spec.(*ast.ValueSpec)
-			if typeIdent, ok := valSpec.Type.(*ast.Ident); ok {
-				enumInfo = enumTypesMap[typeIdent.String()]
+			if valSpec.Type == nil {
+				if len(valSpec.Values) > 0 {
+					fv, ok := valSpec.Values[0].(*ast.CallExpr)
+					if ok {
+						fun, ok := fv.Fun.(*ast.Ident)
+						if ok {
+							enumInfo = enumTypesMap[fun.Name]
+						}
+					}
+				}
+			} else {
+				if typeIdent, ok := valSpec.Type.(*ast.Ident); ok {
+					enumInfo = enumTypesMap[typeIdent.String()]
+				}
 			}
 			if enumInfo != nil {
 				for _, nameIdent := range valSpec.Names {
