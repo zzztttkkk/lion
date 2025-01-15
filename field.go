@@ -6,7 +6,7 @@ import (
 	"unsafe"
 )
 
-type _FieldPtrGetter func(insptr unsafe.Pointer) any
+type FieldPtrGetter func(insptr unsafe.Pointer) any
 
 type Field[M any] struct {
 	typeinfo  *TypeInfo[M]
@@ -15,8 +15,8 @@ type Field[M any] struct {
 	name      string
 	field     reflect.StructField
 	meta      *M
-	ptrgetter _FieldPtrGetter
-	getter    _FieldPtrGetter
+	ptrgetter FieldPtrGetter
+	getter    FieldPtrGetter
 	setter    func(insptr unsafe.Pointer, val any)
 }
 

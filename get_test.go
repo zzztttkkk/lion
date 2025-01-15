@@ -1,13 +1,56 @@
 package lion
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"unsafe"
 )
 
+type GTInt int64
+
 type A struct {
 	A1 string `json:"a1"`
+	A2 *GTInt
+	A3 []GTInt
+}
+
+func TestGetFieldPtr(t *testing.T) {
+	mptr := Ptr[A]()
+
+	a1f := FieldOf[A, struct{}](&mptr.A1)
+	a2f := FieldOf[A, struct{}](&mptr.A2)
+	a3f := FieldOf[A, struct{}](&mptr.A3)
+
+	obj := A{
+		A1: "a1",
+		A2: new(GTInt),
+		A3: []GTInt{7, 888, 9},
+	}
+	*obj.A2 = 12
+
+	fmt.Println(*(a1f.PtrGetter()(unsafe.Pointer(&obj)).(*string)))
+	fmt.Println(**(a2f.PtrGetter()(unsafe.Pointer(&obj)).(**GTInt)))
+	fmt.Println(a3f.PtrGetter()(unsafe.Pointer(&obj)).(*[]GTInt))
+}
+
+func TestGetFieldValue(t *testing.T) {
+	mptr := Ptr[A]()
+
+	a1f := FieldOf[A, struct{}](&mptr.A1)
+	a2f := FieldOf[A, struct{}](&mptr.A2)
+	a3f := FieldOf[A, struct{}](&mptr.A3)
+
+	obj := A{
+		A1: "a1",
+		A2: new(GTInt),
+		A3: []GTInt{7, 888, 9},
+	}
+	*obj.A2 = 12
+
+	fmt.Println(a1f.Getter()(unsafe.Pointer(&obj)))
+	fmt.Println(*((a2f.Getter()(unsafe.Pointer(&obj))).(*GTInt)))
+	fmt.Println(a3f.Getter()(unsafe.Pointer(&obj)))
 }
 
 func noopptr(v any) {

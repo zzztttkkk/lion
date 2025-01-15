@@ -93,19 +93,33 @@ func warnningForType(gotype reflect.Type) {
 	fmt.Printf("lion.warnning: please call `lion.AppendType[%s]()` to improve performance\r\n", gotype)
 }
 
+type anyface struct {
+	typeuptr unsafe.Pointer
+	valuptr  unsafe.Pointer
+}
+
+func pack(tuptr unsafe.Pointer, value unsafe.Pointer) any {
+	var iv any
+	ivptr := (*anyface)(unsafe.Pointer(&iv))
+	ivptr.typeuptr = tuptr
+	ivptr.valuptr = value
+	return iv
+}
+
 // PtrGetter
 // return a function that can get this field ptr from an instance ptr.
 // calling `AppendType[T any]()` with the type of field, will return a faster function.
-func (field *Field[M]) PtrGetter() _FieldPtrGetter {
+func (field *Field[M]) PtrGetter() FieldPtrGetter {
 	if field.ptrgetter == nil {
 		sf := field.StructField()
 		getter, ok := preparedTypePtrGetters[sf.Type]
 		if ok {
 			field.ptrgetter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
 		} else {
-			warnningForType(sf.Type)
+			ptrtype := reflect.PointerTo(sf.Type)
+			ptrtypeuptr := reflect.ValueOf(ptrtype).UnsafePointer()
 			field.ptrgetter = func(insptr unsafe.Pointer) any {
-				return reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Interface()
+				return pack(ptrtypeuptr, unsafe.Add(insptr, field.offset))
 			}
 		}
 	}
@@ -114,16 +128,27 @@ func (field *Field[M]) PtrGetter() _FieldPtrGetter {
 
 func (field *Field[M]) PtrOfInstance(insptr unsafe.Pointer) any { return field.PtrGetter()(insptr) }
 
-func (field *Field[M]) Getter() _FieldPtrGetter {
+func (field *Field[M]) Getter() FieldPtrGetter {
 	if field.getter == nil {
 		sf := field.StructField()
 		getter, ok := preparedTypeValueGetters[sf.Type]
 		if ok {
 			field.getter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
 		} else {
-			warnningForType(sf.Type)
-			field.getter = func(insptr unsafe.Pointer) any {
-				return reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Interface()
+			if sf.Type.Kind() != reflect.Pointer {
+				typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
+				field.getter = func(insptr unsafe.Pointer) any {
+					return pack(typeuptr, unsafe.Add(insptr, field.offset))
+				}
+			} else {
+				ptrtype := reflect.PointerTo(sf.Type)
+				ptrtypeuptr := reflect.ValueOf(ptrtype).UnsafePointer()
+				field.getter = func(insptr unsafe.Pointer) any {
+					// todo memcopy
+					ppany := pack(ptrtypeuptr, unsafe.Add(insptr, field.offset))
+					fmt.Println(reflect.ValueOf(ppany).Elem().Elem().Interface())
+					return reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Interface()
+				}
 			}
 		}
 	}
@@ -141,8 +166,8 @@ func (field *Field[M]) Setter() func(insptr unsafe.Pointer, val any) {
 				setter(insptr, field.offset, val)
 			}
 		} else {
-			warnningForType(sf.Type)
 			field.setter = func(insptr unsafe.Pointer, val any) {
+				// todo memcopy
 				reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Set(reflect.ValueOf(val))
 			}
 		}
