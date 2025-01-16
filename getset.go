@@ -2,6 +2,7 @@ package lion
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -9,9 +10,8 @@ import (
 )
 
 var (
-	preparedTypePtrGetters   = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
-	preparedTypeValueGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
-	preparedTypeSetters      = map[reflect.Type]func(insptr unsafe.Pointer, offset int64, val any){}
+	preparedTypePtrGetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
+	preparedTypeSetters    = map[reflect.Type]func(insptr unsafe.Pointer, offset int64, val any){}
 )
 
 // AppendType
@@ -23,13 +23,6 @@ func AppendType[T any]() {
 	preparedTypePtrGetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]*T)(unsafe.Add(insptr, offset)) }
 	preparedTypePtrGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return (*sql.Null[T])(unsafe.Add(insptr, offset)) }
-
-	// value getters
-	preparedTypeValueGetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*T)(unsafe.Add(insptr, offset)) }
-	preparedTypeValueGetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(**T)(unsafe.Add(insptr, offset)) }
-	preparedTypeValueGetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*[]T)(unsafe.Add(insptr, offset)) }
-	preparedTypeValueGetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*[]*T)(unsafe.Add(insptr, offset)) }
-	preparedTypeValueGetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*sql.Null[T])(unsafe.Add(insptr, offset)) }
 
 	// setters
 	preparedTypeSetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
@@ -80,19 +73,6 @@ func init() {
 	AppendType[time.Duration]()
 }
 
-var (
-	warnningedTypes = map[reflect.Type]EmptyMeta{}
-)
-
-func warnningForType(gotype reflect.Type) {
-	_, ok := warnningedTypes[gotype]
-	if ok {
-		return
-	}
-	warnningedTypes[gotype] = EmptyMeta{}
-	fmt.Printf("lion.warnning: please call `lion.AppendType[%s]()` to improve performance\r\n", gotype)
-}
-
 type anyface struct {
 	typeuptr unsafe.Pointer
 	valuptr  unsafe.Pointer
@@ -106,9 +86,6 @@ func pack(tuptr unsafe.Pointer, value unsafe.Pointer) any {
 	return iv
 }
 
-// PtrGetter
-// return a function that can get this field ptr from an instance ptr.
-// calling `AppendType[T any]()` with the type of field, will return a faster function.
 func (field *Field[M]) PtrGetter() FieldPtrGetter {
 	if field.ptrgetter == nil {
 		sf := field.StructField()
@@ -126,36 +103,32 @@ func (field *Field[M]) PtrGetter() FieldPtrGetter {
 	return field.ptrgetter
 }
 
-func (field *Field[M]) PtrOfInstance(insptr unsafe.Pointer) any { return field.PtrGetter()(insptr) }
+func (field *Field[M]) PtrOf(insptr unsafe.Pointer) any { return field.PtrGetter()(insptr) }
 
-func (field *Field[M]) Getter() FieldPtrGetter {
-	if field.getter == nil {
-		sf := field.StructField()
-		getter, ok := preparedTypeValueGetters[sf.Type]
-		if ok {
-			field.getter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
-		} else {
-			if sf.Type.Kind() != reflect.Pointer {
-				typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
-				field.getter = func(insptr unsafe.Pointer) any {
-					return pack(typeuptr, unsafe.Add(insptr, field.offset))
-				}
-			} else {
-				ptrtype := reflect.PointerTo(sf.Type)
-				ptrtypeuptr := reflect.ValueOf(ptrtype).UnsafePointer()
-				field.getter = func(insptr unsafe.Pointer) any {
-					// todo memcopy
-					ppany := pack(ptrtypeuptr, unsafe.Add(insptr, field.offset))
-					fmt.Println(reflect.ValueOf(ppany).Elem().Elem().Interface())
-					return reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Interface()
-				}
-			}
-		}
+func memcopy(dst unsafe.Pointer, src unsafe.Pointer, bytes int) {
+	type SliceHeader struct {
+		Data uintptr
+		Len  int
+		Cap  int
 	}
-	return field.getter
+	var dstsh = SliceHeader{
+		Data: uintptr(dst),
+		Len:  bytes,
+		Cap:  bytes,
+	}
+	var srcsh = SliceHeader{
+		Data: uintptr(src),
+		Len:  bytes,
+		Cap:  bytes,
+	}
+	var dstsptr = (*[]byte)(unsafe.Pointer(&dstsh))
+	var srcsptr = (*[]byte)(unsafe.Pointer(&srcsh))
+	copy(*dstsptr, *srcsptr)
 }
 
-func (field *Field[M]) ValueOfInstance(insptr unsafe.Pointer) any { return field.Getter()(insptr) }
+var (
+	ErrNil = errors.New("lion: src is nil")
+)
 
 func (field *Field[M]) Setter() func(insptr unsafe.Pointer, val any) {
 	if field.setter == nil {
@@ -166,15 +139,23 @@ func (field *Field[M]) Setter() func(insptr unsafe.Pointer, val any) {
 				setter(insptr, field.offset, val)
 			}
 		} else {
-			field.setter = func(insptr unsafe.Pointer, val any) {
-				// todo memcopy
-				reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Set(reflect.ValueOf(val))
+			typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
+			size := int(sf.Type.Size())
+			field.setter = func(insptr unsafe.Pointer, src any) {
+				srcface := (*anyface)(unsafe.Pointer(&src))
+				if srcface.typeuptr != typeuptr {
+					panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+				}
+				if srcface.valuptr == nil {
+					panic(ErrNil)
+				}
+				memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
 			}
 		}
 	}
 	return field.setter
 }
 
-func (field *Field[M]) ChangeInstance(insptr unsafe.Pointer, val any) {
+func (field *Field[M]) Assign(insptr unsafe.Pointer, val any) {
 	field.Setter()(insptr, val)
 }

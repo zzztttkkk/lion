@@ -43,12 +43,10 @@ func TestTypeinfoOf(t *testing.T) {
 
 	mptr := lion.Ptr[User]()
 
-	VldField[User](&mptr.Age).ChangeInstance(objptr, 12)
-	VldField[User](&mptr.Name).ChangeInstance(objptr, "ztk")
-	VldField[User](&mptr.CreatedAt).ChangeInstance(objptr, int64(32))
-	VldField[User](&mptr._DeletedAt).ChangeInstance(objptr, int64(45))
-
-	fmt.Println(VldField[User](&mptr._DeletedAt).ValueOfInstance(objptr).(int64) == 45)
+	VldField[User](&mptr.Age).Assign(objptr, 12)
+	VldField[User](&mptr.Name).Assign(objptr, "ztk")
+	VldField[User](&mptr.CreatedAt).Assign(objptr, int64(32))
+	VldField[User](&mptr._DeletedAt).Assign(objptr, int64(45))
 
 	deleted_at_ptr := VldField[User](&mptr._DeletedAt).PtrGetter()(objptr).(*int64)
 	fmt.Println(deleted_at_ptr)

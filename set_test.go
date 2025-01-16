@@ -44,7 +44,7 @@ func BenchmarkPtrSet(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ptr := fieldOfA.PtrOfInstance(unsafe.Pointer(&obj)).(*int)
+		ptr := fieldOfA.PtrOf(unsafe.Pointer(&obj)).(*int)
 		*ptr = 12
 	}
 }
@@ -58,7 +58,7 @@ func BenchmarkChangeInstance(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		fieldOfA.ChangeInstance(objptr, 12)
+		fieldOfA.Assign(objptr, 12)
 	}
 }
 
@@ -71,7 +71,7 @@ func BenchmarkChangeInstanceForUnpreparedType(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		fieldOfC.ChangeInstance(objptr, unpreparedInt(12))
+		fieldOfC.Assign(objptr, unpreparedInt(12))
 	}
 }
 

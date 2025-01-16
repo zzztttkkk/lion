@@ -34,25 +34,6 @@ func TestGetFieldPtr(t *testing.T) {
 	fmt.Println(a3f.PtrGetter()(unsafe.Pointer(&obj)).(*[]GTInt))
 }
 
-func TestGetFieldValue(t *testing.T) {
-	mptr := Ptr[A]()
-
-	a1f := FieldOf[A, struct{}](&mptr.A1)
-	a2f := FieldOf[A, struct{}](&mptr.A2)
-	a3f := FieldOf[A, struct{}](&mptr.A3)
-
-	obj := A{
-		A1: "a1",
-		A2: new(GTInt),
-		A3: []GTInt{7, 888, 9},
-	}
-	*obj.A2 = 12
-
-	fmt.Println(a1f.Getter()(unsafe.Pointer(&obj)))
-	fmt.Println(*((a2f.Getter()(unsafe.Pointer(&obj))).(*GTInt)))
-	fmt.Println(a3f.Getter()(unsafe.Pointer(&obj)))
-}
-
 func noopptr(v any) {
 	_ = v.(*string)
 }
@@ -113,18 +94,6 @@ func BenchmarkGetFieldPtrByMethod(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		fptr := a1ptrgetter(valptr)
 		noopptr(fptr)
-	}
-}
-
-func BenchmarkGetFieldValueByMethod(b *testing.B) {
-	a1ptrgetter := FieldOf[A, struct{}](&(Ptr[A]().A1)).Getter()
-	val := A{}
-	valptr := unsafe.Pointer(&val)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		fptr := a1ptrgetter(valptr)
-		noopval(fptr)
 	}
 }
 
