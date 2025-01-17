@@ -34,6 +34,12 @@ func MetaOf[T any, M any](fptr any) *M {
 	return val.(*M)
 }
 
+// UpdateMetaFor
+// update the meta information of the field.
+func UpdateMetaFor[T any, M any](fptr any, meta *M) {
+	FieldOf[T](fptr).updateMetainfo(Typeof[M](), meta)
+}
+
 // UpdateMetaScope
 // update the meta information of T.
 // you can only this function in `init`.
