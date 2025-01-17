@@ -84,6 +84,8 @@ func makeTypeinfo[M any](reg *_Register[M], gotype reflect.Type, ptr any) *TypeI
 	}
 	for f := range ti.EachField() {
 		f.typeinfo = ti
+		f._PtrGetter()
+		f._Setter()
 	}
 	return ti
 }

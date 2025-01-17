@@ -58,7 +58,7 @@ func BenchmarkChangeInstance(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		fieldOfA.Assign(objptr, 12)
+		fieldOfA.AssignTo(objptr, 12)
 	}
 }
 
@@ -71,7 +71,7 @@ func BenchmarkChangeInstanceForUnpreparedType(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		fieldOfC.Assign(objptr, unpreparedInt(12))
+		fieldOfC.AssignTo(objptr, unpreparedInt(12))
 	}
 }
 

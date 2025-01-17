@@ -86,7 +86,7 @@ func pack(tuptr unsafe.Pointer, value unsafe.Pointer) any {
 	return iv
 }
 
-func (field *Field[M]) PtrGetter() FieldPtrGetter {
+func (field *Field[M]) _PtrGetter() FieldPtrGetter {
 	if field.ptrgetter == nil {
 		sf := field.StructField()
 		getter, ok := preparedTypePtrGetters[sf.Type]
@@ -103,7 +103,7 @@ func (field *Field[M]) PtrGetter() FieldPtrGetter {
 	return field.ptrgetter
 }
 
-func (field *Field[M]) PtrOf(insptr unsafe.Pointer) any { return field.PtrGetter()(insptr) }
+func (field *Field[M]) PtrOf(insptr unsafe.Pointer) any { return field.ptrgetter(insptr) }
 
 func memcopy(dst unsafe.Pointer, src unsafe.Pointer, bytes int) {
 	type SliceHeader struct {
@@ -130,7 +130,7 @@ var (
 	ErrNil = errors.New("lion: src is nil")
 )
 
-func (field *Field[M]) Setter() func(insptr unsafe.Pointer, val any) {
+func (field *Field[M]) _Setter() func(insptr unsafe.Pointer, val any) {
 	if field.setter == nil {
 		sf := field.StructField()
 		setter, ok := preparedTypeSetters[sf.Type]
@@ -141,21 +141,36 @@ func (field *Field[M]) Setter() func(insptr unsafe.Pointer, val any) {
 		} else {
 			typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
 			size := int(sf.Type.Size())
-			field.setter = func(insptr unsafe.Pointer, src any) {
-				srcface := (*anyface)(unsafe.Pointer(&src))
-				if srcface.typeuptr != typeuptr {
-					panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+			isptr := sf.Type.Kind() == reflect.Pointer
+
+			if isptr {
+				field.setter = func(insptr unsafe.Pointer, src any) {
+					srcface := (*anyface)(unsafe.Pointer(&src))
+					if srcface.typeuptr != typeuptr {
+						panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+					}
+					if srcface.valuptr == nil {
+						panic(ErrNil)
+					}
+					memcopy(unsafe.Add(insptr, field.offset), unsafe.Pointer(&srcface.valuptr), size)
 				}
-				if srcface.valuptr == nil {
-					panic(ErrNil)
+			} else {
+				field.setter = func(insptr unsafe.Pointer, src any) {
+					srcface := (*anyface)(unsafe.Pointer(&src))
+					if srcface.typeuptr != typeuptr {
+						panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+					}
+					if srcface.valuptr == nil {
+						panic(ErrNil)
+					}
+					memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
 				}
-				memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
 			}
 		}
 	}
 	return field.setter
 }
 
-func (field *Field[M]) Assign(insptr unsafe.Pointer, val any) {
-	field.Setter()(insptr, val)
+func (field *Field[M]) AssignTo(insptr unsafe.Pointer, val any) {
+	field.setter(insptr, val)
 }

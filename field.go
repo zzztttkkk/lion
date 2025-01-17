@@ -9,12 +9,13 @@ import (
 type FieldPtrGetter func(insptr unsafe.Pointer) any
 
 type Field[M any] struct {
-	typeinfo  *TypeInfo[M]
-	offset    int64
-	ref       *Field[M]
-	name      string
-	field     reflect.StructField
-	meta      *M
+	typeinfo *TypeInfo[M]
+	offset   int64
+	ref      *Field[M]
+	name     string
+	field    reflect.StructField
+	meta     *M
+
 	ptrgetter FieldPtrGetter
 	setter    func(insptr unsafe.Pointer, val any)
 }

@@ -29,9 +29,9 @@ func TestGetFieldPtr(t *testing.T) {
 	}
 	*obj.A2 = 12
 
-	fmt.Println(*(a1f.PtrGetter()(unsafe.Pointer(&obj)).(*string)))
-	fmt.Println(**(a2f.PtrGetter()(unsafe.Pointer(&obj)).(**GTInt)))
-	fmt.Println(a3f.PtrGetter()(unsafe.Pointer(&obj)).(*[]GTInt))
+	fmt.Println(*(a1f.PtrOf(unsafe.Pointer(&obj)).(*string)))
+	fmt.Println(**(a2f.PtrOf(unsafe.Pointer(&obj)).(**GTInt)))
+	fmt.Println(a3f.PtrOf(unsafe.Pointer(&obj)).(*[]GTInt))
 }
 
 func noopptr(v any) {
@@ -86,13 +86,13 @@ func BenchmarkGetFieldPtrByOffset(b *testing.B) {
 }
 
 func BenchmarkGetFieldPtrByMethod(b *testing.B) {
-	a1ptrgetter := FieldOf[A, struct{}](&(Ptr[A]().A1)).PtrGetter()
+	a1f := FieldOf[A, struct{}](&(Ptr[A]().A1))
 	val := A{}
 	valptr := unsafe.Pointer(&val)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		fptr := a1ptrgetter(valptr)
+		fptr := a1f.PtrOf(valptr)
 		noopptr(fptr)
 	}
 }
