@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/zzztttkkk/lion"
 	"github.com/zzztttkkk/lion/flags"
+	"github.com/zzztttkkk/lion/internal"
 )
 
 type Options[T lion.IntType] struct {
@@ -35,10 +35,6 @@ type Options[T lion.IntType] struct {
 	Sql  bool
 	JSON bool
 }
-
-var (
-	funcnameregexp = regexp.MustCompile(`^\.init\.\d+\.func\d+$`)
-)
 
 func should_re_gen(dir string, targetfp string) bool {
 	target_stat, err := os.Stat(targetfp)
@@ -112,18 +108,13 @@ func Generate[T lion.IntType](fnc func() *Options[T]) {
 		return
 	}
 
+	internal.EnusreInInitFunc(fnc)
+
 	enumtype := lion.Typeof[T]()
 	enumpkgpath := enumtype.PkgPath()
 	enumpkgname := path.Base(enumpkgpath)
 
 	runtimefunc := runtime.FuncForPC(reflect.ValueOf(fnc).Pointer())
-	funcname := runtimefunc.Name()
-	if !strings.HasPrefix(funcname, enumpkgpath) {
-		panic(fmt.Errorf("lion.enums: fnc's pkg is not same as enum's pkg"))
-	}
-	if !funcnameregexp.MatchString(funcname[len(enumpkgpath):]) {
-		panic(fmt.Errorf("lion.enums: `fuc` must be an anonymous function defined in the `init` function. `%s`", funcname))
-	}
 	filename, _ := runtimefunc.FileLine(0)
 	dirname := filepath.Dir(filename)
 	if inmodcache(filename) {

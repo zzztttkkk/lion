@@ -86,7 +86,7 @@ func pack(tuptr unsafe.Pointer, value unsafe.Pointer) any {
 	return iv
 }
 
-func (field *Field) _PtrGetter() FieldPtrGetter {
+func (field *Field) _PtrGetter() _FieldPtrGetter {
 	if field.ptrgetter == nil {
 		sf := field.StructField()
 		getter, ok := ptrgetters[sf.Type]
@@ -103,8 +103,12 @@ func (field *Field) _PtrGetter() FieldPtrGetter {
 	return field.ptrgetter
 }
 
+// PtrOf
+// returns the pointer of the field on `insptr`.
 func (field *Field) PtrOf(insptr unsafe.Pointer) any { return field.ptrgetter(insptr) }
 
+// UnsafePtrOf
+// returns the unsafe pointer of the field on `insptr`.
 func (field *Field) UnsafePtrOf(insptr unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Add(insptr, field.offset)
 }
@@ -175,6 +179,8 @@ func (field *Field) _Setter() func(insptr unsafe.Pointer, val any) {
 	return field.setter
 }
 
+// AssignTo
+// assigns the value to the field on `insptr`.
 func (field *Field) AssignTo(insptr unsafe.Pointer, val any) {
 	field.setter(insptr, val)
 }

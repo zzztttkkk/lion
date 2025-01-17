@@ -20,6 +20,7 @@ type _Common struct {
 	CreatedAt  int64  `vld:"created_at"`
 	_DeletedAt int64  `vld:"deleted_at"`
 	Name       string `vld:"cname"`
+	XX         bool   `vld:"-"`
 }
 
 type User struct {
@@ -29,8 +30,14 @@ type User struct {
 }
 
 func init() {
-	ptr := lion.Ptr[User]()
-	lion.UpdateMetainfo[User](&ptr.Age, &VldMetainfo{Regexp: "age"})
+	lion.UpdateMetaScope(func(mptr *User, update func(ptr any, meta *VldMetainfo)) {
+		update(
+			&mptr.Age,
+			&VldMetainfo{Regexp: "age"},
+		)
+	})
+
+	fmt.Println(lion.FieldOf[User](&(lion.Ptr[User]().XX)).Tag("vld"))
 }
 
 func TestTypeinfoOf(t *testing.T) {

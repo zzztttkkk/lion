@@ -6,8 +6,8 @@ reflection is useful, but I do't like complex tags.
 
 ```go
 type User struct {
-    Name string `opts:"name"`
-    Age int `opts:"age"`
+    Name string
+    Age int
 }
 
 // 1. define metainfo type
@@ -15,25 +15,23 @@ type Options struct {
     Info string
 }
 
-// 2. set tag name
-func init(){
-    lion.RegisterOf[Options]().TagNames("opts")
-}
-
 // 3. set metainfo
 func init() {
-    ptr := lion.Ptr[User]()
-
-    lion.FieldOf[User, Options](&ptr.Name).Meta = &Options{Info : "balabala"}
+    lion.UpdateMetaScope(func(mptr *User, update func(fptr any, meta *Options)){
+        update(
+            &mptr.Name,
+            &Options{
+                Info: "balabalaxiaomoxian"
+            },
+        )
+    })
 }
 
-// 4. read metainfo
-
 // get typeinfo
-lion.TypeinfoOf[User, Options]()
+lion.TypeinfoOf[User]()
 
 // get fieldinfo
-lion.FieldOf[User, Options](&(reflectx.Ptr[User]().Name))
+lion.FieldOf[User](&(lion.Ptr[User]().Name))
 ```
 
 # !!!!

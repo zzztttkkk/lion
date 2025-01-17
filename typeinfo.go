@@ -7,6 +7,8 @@ import (
 	"unsafe"
 )
 
+// TypeInfo
+// represents the type information of a struct.
 type TypeInfo struct {
 	Name   string
 	GoType reflect.Type
@@ -23,6 +25,9 @@ var (
 	ptrs = map[reflect.Type]any{}
 )
 
+// Ptr
+// returns the model pointer of the type T.
+// This is not a concurrent safe function.
 func Ptr[T any]() *T {
 	gotype := Typeof[T]()
 	pv, ok := ptrs[gotype]
@@ -44,6 +49,8 @@ func ptrof(gotype reflect.Type) any {
 	return pv
 }
 
+// Typeof
+// returns the reflect.Type of the type T.
 func Typeof[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
@@ -52,6 +59,9 @@ var (
 	typeinfocache = map[reflect.Type]*TypeInfo{}
 )
 
+// TypeInfoOf
+// returns the TypeInfo of the type T.
+// This is not a concurrent safe function.
 func TypeInfoOf[T any]() *TypeInfo {
 	gotype := Typeof[T]()
 	ti, ok := typeinfocache[gotype]
@@ -128,7 +138,7 @@ func walk(fs *[]Field, gotype reflect.Type, ptrv reflect.Value, begin int64) {
 	}
 }
 
-func (ti *TypeInfo) FieldByOffset(offset int64) *Field {
+func (ti *TypeInfo) fieldByOffset(offset int64) *Field {
 	if ti.offsetmap != nil {
 		return ti.offsetmap[offset]
 	}
@@ -141,19 +151,27 @@ func (ti *TypeInfo) FieldByOffset(offset int64) *Field {
 	panic(fmt.Errorf("reflectx: bad offset, %s, %d", ti.GoType, offset))
 }
 
+// FieldByUnsafePtr
+// returns the Field of the pointer. The `ptr` must be returned from `Ptr[T]()`.
 func (ti *TypeInfo) FieldByUnsafePtr(ptr unsafe.Pointer) *Field {
-	return ti.FieldByOffset(int64(uintptr(ptr)) - ti.PtrNum)
+	return ti.fieldByOffset(int64(uintptr(ptr)) - ti.PtrNum)
 }
 
+// FieldByPtr
+// returns the Field of the pointer. The `ptr` must be returned from `Ptr[T]()`.
 func (ti *TypeInfo) FieldByPtr(ptr any) *Field {
 	return ti.FieldByUnsafePtr(reflect.ValueOf(ptr).UnsafePointer())
 }
 
 type FieldsOptions struct {
-	TagName      string
+	// TagName is the name of the tag. if tag name is "-", the field will be ignored.
+	TagName string
+	// OnlyExported is a flag to filter only exported fields. default is false.
 	OnlyExported bool
 }
 
+// Fields
+// returns a sequence of fields. you can pass a filter option.
 func (ti *TypeInfo) Fields(opts *FieldsOptions) iter.Seq[*Field] {
 	if opts == nil {
 		opts = &FieldsOptions{}
@@ -188,4 +206,37 @@ func (ti *TypeInfo) Fields(opts *FieldsOptions) iter.Seq[*Field] {
 			}
 		}
 	}
+}
+
+// FilterFields
+// returns a slice of fields that pass the filter.
+func (ti *TypeInfo) FilterFields(filter func(fp *Field) bool) []*Field {
+	var result []*Field
+	for v := range ti.Fields(nil) {
+		if filter(v) {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+// FindField
+// returns the first field that pass the filter.
+func (ti *TypeInfo) FindField(filter func(fp *Field) bool) *Field {
+	for v := range ti.Fields(nil) {
+		if filter(v) {
+			return v
+		}
+	}
+	return nil
+}
+
+// MustFindField
+// returns the first field that pass the filter. panic if not found.
+func (ti *TypeInfo) MustFindField(filter func(fp *Field) bool) *Field {
+	fp := ti.FindField(filter)
+	if fp == nil {
+		panic(fmt.Errorf("lion: field not found"))
+	}
+	return fp
 }

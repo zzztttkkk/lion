@@ -7,6 +7,8 @@ type Tag struct {
 	Opts map[string]string
 }
 
+// Tag
+// returns the tag information of the field.
 func (field *Field) Tag(name string) *Tag {
 	if field.ref == nil {
 		if field.tags == nil {
