@@ -240,3 +240,27 @@ func (ti *TypeInfo) MustFindField(filter func(fp *Field) bool) *Field {
 	}
 	return fp
 }
+
+func (ti *TypeInfo) AllFields() []*Field {
+	var result []*Field
+	for v := range ti.Fields(nil) {
+		result = append(result, v)
+	}
+	return result
+}
+
+func (ti *TypeInfo) AllExportedFields() []*Field {
+	var result []*Field
+	for v := range ti.Fields(&FieldsOptions{OnlyExported: true}) {
+		result = append(result, v)
+	}
+	return result
+}
+
+func (ti *TypeInfo) AllTagedFields(tag string) []*Field {
+	var result []*Field
+	for v := range ti.Fields(&FieldsOptions{OnlyExported: true, TagName: tag}) {
+		result = append(result, v)
+	}
+	return result
+}
