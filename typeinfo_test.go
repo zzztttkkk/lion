@@ -12,12 +12,8 @@ type VldMetainfo struct {
 	Regexp string
 }
 
-func init() {
-	lion.RegisterOf[VldMetainfo]().TagNames("vld").Unexposed()
-}
-
-func VldField[T any](ptr any) *lion.Field[VldMetainfo] {
-	return lion.FieldOf[T, VldMetainfo](ptr)
+func VldField[T any](ptr any) *lion.Field {
+	return lion.FieldOf[T](ptr)
 }
 
 type _Common struct {
@@ -34,7 +30,7 @@ type User struct {
 
 func init() {
 	ptr := lion.Ptr[User]()
-	VldField[User](&ptr.Age).UpdateMetainfo(&VldMetainfo{Regexp: "age"})
+	lion.UpdateMetainfo[User](&ptr.Age, &VldMetainfo{Regexp: "age"})
 }
 
 func TestTypeinfoOf(t *testing.T) {
@@ -54,7 +50,7 @@ func TestTypeinfoOf(t *testing.T) {
 	*deleted_at_ptr = 455
 	fmt.Println(obj)
 
-	for v := range lion.TypeInfoOf[User, VldMetainfo]().EachField() {
+	for v := range lion.TypeInfoOf[User]().Fields(nil) {
 		fmt.Println(v)
 	}
 }

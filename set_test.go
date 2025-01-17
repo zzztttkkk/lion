@@ -25,20 +25,9 @@ func BenchmarkDirectlySet(b *testing.B) {
 	}
 }
 
-func BenchmarkUnsafeUpdate(b *testing.B) {
-	mptr := lion.Ptr[SetTest]()
-	fieldOfA := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.A)
-
-	var obj SetTest
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		lion.UnsafeUpdate(&obj, fieldOfA, 12)
-	}
-}
-
 func BenchmarkPtrSet(b *testing.B) {
 	mptr := lion.Ptr[SetTest]()
-	fieldOfA := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.A)
+	fieldOfA := lion.FieldOf[SetTest](&mptr.A)
 
 	var obj SetTest
 	b.ResetTimer()
@@ -51,7 +40,7 @@ func BenchmarkPtrSet(b *testing.B) {
 
 func BenchmarkChangeInstance(b *testing.B) {
 	mptr := lion.Ptr[SetTest]()
-	fieldOfA := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.A)
+	fieldOfA := lion.FieldOf[SetTest](&mptr.A)
 
 	var obj SetTest
 	var objptr = unsafe.Pointer(&obj)
@@ -64,7 +53,7 @@ func BenchmarkChangeInstance(b *testing.B) {
 
 func BenchmarkChangeInstanceForUnpreparedType(b *testing.B) {
 	mptr := lion.Ptr[SetTest]()
-	fieldOfC := lion.FieldOf[SetTest, lion.EmptyMeta](&mptr.C)
+	fieldOfC := lion.FieldOf[SetTest](&mptr.C)
 
 	var obj SetTest
 	var objptr = unsafe.Pointer(&obj)

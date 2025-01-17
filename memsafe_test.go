@@ -10,12 +10,12 @@ type MemSafeGet struct {
 }
 
 var (
-	msgobjf *Field[struct{}]
+	msgobjf *Field
 )
 
 func init() {
 	mptr := Ptr[MemSafeGet]()
-	msgobjf = FieldOf[MemSafeGet, struct{}](&mptr.Obj)
+	msgobjf = FieldOf[MemSafeGet](&mptr.Obj)
 }
 
 // this is ok
@@ -85,12 +85,12 @@ type MemSafeSet struct {
 }
 
 var (
-	mssobjf *Field[struct{}]
+	mssobjf *Field
 )
 
 func init() {
 	mptr := Ptr[MemSafeSet]()
-	mssobjf = FieldOf[MemSafeSet, struct{}](&mptr.Obj)
+	mssobjf = FieldOf[MemSafeSet](&mptr.Obj)
 }
 
 func setobjfptr1(v int64) *MemSafeSet {

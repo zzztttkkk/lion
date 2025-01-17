@@ -18,9 +18,9 @@ type A struct {
 func TestGetFieldPtr(t *testing.T) {
 	mptr := Ptr[A]()
 
-	a1f := FieldOf[A, struct{}](&mptr.A1)
-	a2f := FieldOf[A, struct{}](&mptr.A2)
-	a3f := FieldOf[A, struct{}](&mptr.A3)
+	a1f := FieldOf[A](&mptr.A1)
+	a2f := FieldOf[A](&mptr.A2)
+	a3f := FieldOf[A](&mptr.A3)
 
 	obj := A{
 		A1: "a1",
@@ -86,7 +86,7 @@ func BenchmarkGetFieldPtrByOffset(b *testing.B) {
 }
 
 func BenchmarkGetFieldPtrByMethod(b *testing.B) {
-	a1f := FieldOf[A, struct{}](&(Ptr[A]().A1))
+	a1f := FieldOf[A](&(Ptr[A]().A1))
 	val := A{}
 	valptr := unsafe.Pointer(&val)
 
