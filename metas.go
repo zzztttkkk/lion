@@ -30,8 +30,8 @@ func (filed *Field) UpdateMetainfo(metatype reflect.Type, meta any) {
 
 // MetaOf
 // returns the meta information of the field.
-func MetaOf[T any, M any](fptr any) *M {
-	val := FieldOf[T](fptr).Metainfo(Typeof[M]())
+func MetaOf[T any, M any](field *Field) *M {
+	val := field.Metainfo(Typeof[M]())
 	if val == nil {
 		return nil
 	}
@@ -40,8 +40,8 @@ func MetaOf[T any, M any](fptr any) *M {
 
 // UpdateMetaFor
 // update the meta information of the field.
-func UpdateMetaFor[T any, M any](fptr any, meta *M) {
-	FieldOf[T](fptr).UpdateMetainfo(Typeof[M](), meta)
+func UpdateMetaFor[T any, M any](field *Field, meta *M) {
+	field.UpdateMetainfo(Typeof[M](), meta)
 }
 
 // UpdateMetaScope
@@ -52,10 +52,4 @@ func UpdateMetaScope[T any, M any](fnc func(mptr *T, update func(ptr any, meta *
 	fnc(Ptr[T](), func(fptr any, meta *M) {
 		FieldOf[T](fptr).UpdateMetainfo(Typeof[M](), meta)
 	})
-}
-
-// ReadMetaScope
-// read the meta information of T.
-func ReadMetaScope[T any, M any](fnc func(mptr *T, read func(fptr any) *M)) {
-	fnc(Ptr[T](), func(fptr any) *M { return MetaOf[T, M](fptr) })
 }
