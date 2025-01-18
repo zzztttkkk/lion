@@ -30,7 +30,7 @@ func (filed *Field) UpdateMetainfo(metatype reflect.Type, meta any) {
 
 // MetaOf
 // returns the meta information of the field.
-func MetaOf[T any, M any](field *Field) *M {
+func MetaOf[M any](field *Field) *M {
 	val := field.Metainfo(Typeof[M]())
 	if val == nil {
 		return nil
@@ -40,7 +40,7 @@ func MetaOf[T any, M any](field *Field) *M {
 
 // UpdateMetaFor
 // update the meta information of the field.
-func UpdateMetaFor[T any, M any](field *Field, meta *M) {
+func UpdateMetaFor[M any](field *Field, meta *M) {
 	field.UpdateMetainfo(Typeof[M](), meta)
 }
 
