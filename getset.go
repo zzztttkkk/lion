@@ -11,6 +11,7 @@ import (
 
 var (
 	ptrgetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
+	valgetters = map[reflect.Type]func(insptr unsafe.Pointer, offset int64) any{}
 	setters    = map[reflect.Type]func(insptr unsafe.Pointer, offset int64, val any){}
 )
 
@@ -23,6 +24,13 @@ func AppendType[T any]() {
 	ptrgetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]T)(unsafe.Add(insptr, offset)) }
 	ptrgetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return (*[]*T)(unsafe.Add(insptr, offset)) }
 	ptrgetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return (*sql.Null[T])(unsafe.Add(insptr, offset)) }
+
+	// val getters
+	valgetters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*T)(unsafe.Add(insptr, offset)) }
+	valgetters[Typeof[*T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(**T)(unsafe.Add(insptr, offset)) }
+	valgetters[Typeof[[]T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*[]T)(unsafe.Add(insptr, offset)) }
+	valgetters[Typeof[[]*T]()] = func(insptr unsafe.Pointer, offset int64) any { return *(**[]*T)(unsafe.Add(insptr, offset)) }
+	valgetters[Typeof[sql.Null[T]]()] = func(insptr unsafe.Pointer, offset int64) any { return *(*sql.Null[T])(unsafe.Add(insptr, offset)) }
 
 	// setters
 	setters[Typeof[T]()] = func(insptr unsafe.Pointer, offset int64, val any) {
@@ -86,21 +94,18 @@ func pack(tuptr unsafe.Pointer, value unsafe.Pointer) any {
 	return iv
 }
 
-func (field *Field) _PtrGetter() _FieldPtrGetter {
-	if field.ptrgetter == nil {
-		sf := field.StructField()
-		getter, ok := ptrgetters[sf.Type]
-		if ok {
-			field.ptrgetter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
-		} else {
-			ptrtype := reflect.PointerTo(sf.Type)
-			ptrtypeuptr := reflect.ValueOf(ptrtype).UnsafePointer()
-			field.ptrgetter = func(insptr unsafe.Pointer) any {
-				return pack(ptrtypeuptr, unsafe.Add(insptr, field.offset))
-			}
+func (field *Field) _PtrGetter() {
+	sf := field.StructField()
+	getter, ok := ptrgetters[sf.Type]
+	if ok {
+		field.ptrgetter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
+	} else {
+		ptrtype := reflect.PointerTo(sf.Type)
+		ptrtypeuptr := reflect.ValueOf(ptrtype).UnsafePointer()
+		field.ptrgetter = func(insptr unsafe.Pointer) any {
+			return pack(ptrtypeuptr, unsafe.Add(insptr, field.offset))
 		}
 	}
-	return field.ptrgetter
 }
 
 // PtrOf
@@ -115,17 +120,18 @@ func (field *Field) UnsafePtrOf(insptr unsafe.Pointer) unsafe.Pointer {
 
 func memcopy(dst unsafe.Pointer, src unsafe.Pointer, bytes int) {
 	type SliceHeader struct {
-		Data uintptr
+		Data unsafe.Pointer
 		Len  int
 		Cap  int
 	}
+
 	var dstsh = SliceHeader{
-		Data: uintptr(dst),
+		Data: dst,
 		Len:  bytes,
 		Cap:  bytes,
 	}
 	var srcsh = SliceHeader{
-		Data: uintptr(src),
+		Data: src,
 		Len:  bytes,
 		Cap:  bytes,
 	}
@@ -138,49 +144,71 @@ var (
 	ErrNil = errors.New("lion: src is nil")
 )
 
-func (field *Field) _Setter() func(insptr unsafe.Pointer, val any) {
-	if field.setter == nil {
-		sf := field.StructField()
-		setter, ok := setters[sf.Type]
-		if ok {
-			field.setter = func(insptr unsafe.Pointer, val any) {
-				setter(insptr, field.offset, val)
+func (field *Field) _Setter() {
+	sf := field.StructField()
+	setter, ok := setters[sf.Type]
+	if ok {
+		field.setter = func(insptr unsafe.Pointer, val any) {
+			setter(insptr, field.offset, val)
+		}
+	} else {
+		typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
+		size := int(sf.Type.Size())
+		isptr := sf.Type.Kind() == reflect.Pointer
+
+		if isptr {
+			field.setter = func(insptr unsafe.Pointer, src any) {
+				srcface := (*anyface)(unsafe.Pointer(&src))
+				if srcface.typeuptr != typeuptr {
+					panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+				}
+				if srcface.valuptr == nil {
+					panic(ErrNil)
+				}
+				memcopy(unsafe.Add(insptr, field.offset), unsafe.Pointer(&srcface.valuptr), size)
 			}
 		} else {
-			typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
-			size := int(sf.Type.Size())
-			isptr := sf.Type.Kind() == reflect.Pointer
-
-			if isptr {
-				field.setter = func(insptr unsafe.Pointer, src any) {
-					srcface := (*anyface)(unsafe.Pointer(&src))
-					if srcface.typeuptr != typeuptr {
-						panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
-					}
-					if srcface.valuptr == nil {
-						panic(ErrNil)
-					}
-					memcopy(unsafe.Add(insptr, field.offset), unsafe.Pointer(&srcface.valuptr), size)
+			field.setter = func(insptr unsafe.Pointer, src any) {
+				srcface := (*anyface)(unsafe.Pointer(&src))
+				if srcface.typeuptr != typeuptr {
+					panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
 				}
-			} else {
-				field.setter = func(insptr unsafe.Pointer, src any) {
-					srcface := (*anyface)(unsafe.Pointer(&src))
-					if srcface.typeuptr != typeuptr {
-						panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
-					}
-					if srcface.valuptr == nil {
-						panic(ErrNil)
-					}
-					memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
+				if srcface.valuptr == nil {
+					panic(ErrNil)
 				}
+				memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
 			}
 		}
 	}
-	return field.setter
 }
 
 // AssignTo
-// assigns the value to the field on `insptr`.
+// assigns the value to the field on `insptr`. UNSAFE.
 func (field *Field) AssignTo(insptr unsafe.Pointer, val any) {
 	field.setter(insptr, val)
 }
+
+func (field *Field) _Getter() {
+	sf := field.StructField()
+	getter, ok := valgetters[sf.Type]
+	if ok {
+		field.getter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
+	} else {
+		typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
+		isptr := sf.Type.Kind() == reflect.Pointer
+		if isptr {
+			field.getter = func(insptr unsafe.Pointer) any {
+				// go1.23.5 src://reflect/value.go:1233
+				return pack(typeuptr, *((*unsafe.Pointer)(unsafe.Add(insptr, field.offset))))
+			}
+		} else {
+			field.getter = func(insptr unsafe.Pointer) any {
+				return pack(typeuptr, unsafe.Add(insptr, field.offset))
+			}
+		}
+	}
+}
+
+// ValueOf
+// returns the value of the field on `ins`. UNSAFE.
+func (field *Field) ValueOf(ins unsafe.Pointer) any { return field.getter(ins) }

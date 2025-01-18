@@ -19,6 +19,7 @@ type Field struct {
 	tags     map[string]*Tag
 
 	ptrgetter _FieldPtrGetter
+	getter    _FieldPtrGetter
 	setter    func(insptr unsafe.Pointer, val any)
 }
 

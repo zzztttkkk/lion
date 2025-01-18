@@ -28,10 +28,15 @@ func TestGetFieldPtr(t *testing.T) {
 		A3: []GTInt{7, 888, 9},
 	}
 	*obj.A2 = 12
+	objuptr := unsafe.Pointer(&obj)
 
-	fmt.Println(*(a1f.PtrOf(unsafe.Pointer(&obj)).(*string)))
-	fmt.Println(**(a2f.PtrOf(unsafe.Pointer(&obj)).(**GTInt)))
-	fmt.Println(a3f.PtrOf(unsafe.Pointer(&obj)).(*[]GTInt))
+	fmt.Println(*(a1f.PtrOf(objuptr).(*string)))
+	fmt.Println(**(a2f.PtrOf(objuptr).(**GTInt)))
+	fmt.Println(a3f.PtrOf(objuptr).(*[]GTInt))
+
+	fmt.Println(a1f.ValueOf(objuptr), obj.A1)
+	fmt.Println(a2f.ValueOf(objuptr), obj.A2)
+	fmt.Println(a3f.ValueOf(objuptr), obj.A3)
 }
 
 func noopptr(v any) {

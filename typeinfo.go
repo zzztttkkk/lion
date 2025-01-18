@@ -96,6 +96,7 @@ func makeTypeinfo(gotype reflect.Type, ptr any) *TypeInfo {
 	}
 	for f := range ti.Fields(nil) {
 		f.typeinfo = ti
+		f._Getter()
 		f._PtrGetter()
 		f._Setter()
 	}
