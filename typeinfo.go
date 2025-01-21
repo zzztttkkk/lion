@@ -110,10 +110,7 @@ func walk(fs *[]Field, gotype reflect.Type, ptrv reflect.Value, begin int64) {
 		sf := gotype.Field(i)
 		fv := vv.Field(i)
 		fptr := fv.Addr()
-		if sf.Anonymous {
-			if sf.Type.Kind() != reflect.Struct {
-				panic(fmt.Errorf("lion: pointer emmbed struct is not supported. %s.%s", gotype, sf.Type))
-			}
+		if sf.Anonymous && sf.Type.Kind() == reflect.Struct {
 			baseoffset := int64(sf.Offset)
 			sti := makeTypeinfo(sf.Type, ptrof(sf.Type))
 
