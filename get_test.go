@@ -172,6 +172,18 @@ func BenchmarkGetFieldPtrByMethod(b *testing.B) {
 	}
 }
 
+func BenchmarkGetFieldValByMethod(b *testing.B) {
+	a1f := FieldOf[A](&(Ptr[A]().A1))
+	val := A{}
+	valptr := unsafe.Pointer(&val)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fptr := a1f.ValueOf(valptr)
+		noopval(fptr)
+	}
+}
+
 func BenchmarkGetFieldPtrByOffsetAndTypecast(b *testing.B) {
 	val := A{}
 	valptr := unsafe.Pointer(&val)
