@@ -73,6 +73,16 @@ func TypeInfoOf[T any]() *TypeInfo {
 	return ti
 }
 
+func GetTypeInfo(gotype reflect.Type) *TypeInfo {
+	ti, ok := typeinfocache[gotype]
+	if ok {
+		return ti
+	}
+	ti = makeTypeinfo(gotype, ptrof(gotype))
+	typeinfocache[gotype] = ti
+	return ti
+}
+
 func makeTypeinfo(gotype reflect.Type, ptr any) *TypeInfo {
 	ptrv := reflect.ValueOf(ptr)
 	uptr := ptrv.UnsafePointer()
