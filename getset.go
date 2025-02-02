@@ -102,9 +102,7 @@ func (field *Field) _PtrGetter() {
 	} else {
 		ptrtype := reflect.PointerTo(sf.Type)
 		ptrtypeuptr := reflect.ValueOf(ptrtype).UnsafePointer()
-		field.ptrgetter = func(insptr unsafe.Pointer) any {
-			return pack(ptrtypeuptr, unsafe.Add(insptr, field.offset))
-		}
+		field.ptrgetter = func(insptr unsafe.Pointer) any { return pack(ptrtypeuptr, unsafe.Add(insptr, field.offset)) }
 	}
 }
 
@@ -154,29 +152,44 @@ func (field *Field) _Setter() {
 	} else {
 		typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
 		size := int(sf.Type.Size())
-		isptr := sf.Type.Kind() == reflect.Pointer
 
-		if isptr {
-			field.setter = func(insptr unsafe.Pointer, src any) {
-				srcface := (*anyface)(unsafe.Pointer(&src))
-				if srcface.typeuptr != typeuptr {
-					panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+		switch sf.Type.Kind() {
+		case reflect.Interface, reflect.Func, reflect.Chan, reflect.UnsafePointer:
+			{
+				field.setter = func(insptr unsafe.Pointer, val any) {
+					elev := reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem()
+					if val == nil {
+						elev.SetZero()
+						return
+					}
+					elev.Set(reflect.ValueOf(val))
 				}
-				if srcface.valuptr == nil {
-					panic(ErrNil)
-				}
-				memcopy(unsafe.Add(insptr, field.offset), unsafe.Pointer(&srcface.valuptr), size)
 			}
-		} else {
-			field.setter = func(insptr unsafe.Pointer, src any) {
-				srcface := (*anyface)(unsafe.Pointer(&src))
-				if srcface.typeuptr != typeuptr {
-					panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+		case reflect.Pointer:
+			{
+				field.setter = func(insptr unsafe.Pointer, src any) {
+					srcface := (*anyface)(unsafe.Pointer(&src))
+					if srcface.typeuptr != typeuptr {
+						panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+					}
+					if srcface.valuptr == nil {
+						panic(ErrNil)
+					}
+					memcopy(unsafe.Add(insptr, field.offset), unsafe.Pointer(&srcface.valuptr), size)
 				}
-				if srcface.valuptr == nil {
-					panic(ErrNil)
+			}
+		default:
+			{
+				field.setter = func(insptr unsafe.Pointer, src any) {
+					srcface := (*anyface)(unsafe.Pointer(&src))
+					if srcface.typeuptr != typeuptr {
+						panic(fmt.Errorf("lion: `%v` is not type `%s`", src, sf.Type))
+					}
+					if srcface.valuptr == nil {
+						panic(ErrNil)
+					}
+					memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
 				}
-				memcopy(unsafe.Add(insptr, field.offset), srcface.valuptr, size)
 			}
 		}
 	}
@@ -195,15 +208,24 @@ func (field *Field) _Getter() {
 		field.getter = func(insptr unsafe.Pointer) any { return getter(insptr, field.offset) }
 	} else {
 		typeuptr := reflect.ValueOf(sf.Type).UnsafePointer()
-		isptr := sf.Type.Kind() == reflect.Pointer
-		if isptr {
-			field.getter = func(insptr unsafe.Pointer) any {
-				// go1.23.5 src://reflect/value.go:1233
-				return pack(typeuptr, *((*unsafe.Pointer)(unsafe.Add(insptr, field.offset))))
+		switch sf.Type.Kind() {
+		case reflect.Interface, reflect.UnsafePointer:
+			{
+				field.getter = func(insptr unsafe.Pointer) any {
+					return reflect.NewAt(sf.Type, unsafe.Add(insptr, field.offset)).Elem().Interface()
+				}
 			}
-		} else {
-			field.getter = func(insptr unsafe.Pointer) any {
-				return pack(typeuptr, unsafe.Add(insptr, field.offset))
+		case reflect.Pointer, reflect.Func:
+			{
+				field.getter = func(insptr unsafe.Pointer) any {
+					return pack(typeuptr, *((*unsafe.Pointer)(unsafe.Add(insptr, field.offset))))
+				}
+			}
+		default:
+			{
+				field.getter = func(insptr unsafe.Pointer) any {
+					return pack(typeuptr, unsafe.Add(insptr, field.offset))
+				}
 			}
 		}
 	}

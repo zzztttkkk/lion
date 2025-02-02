@@ -1,6 +1,6 @@
 # lion
 
-reflection is useful, but I do't like complex tags.
+init time reflection.
 
 [`lion`](https://www.dota2.com/hero/lion) is a character of Dota2, kind of evil and cute. Just like this package.
 
@@ -33,7 +33,3 @@ lion.TypeinfoOf[User]()
 // get fieldinfo
 lion.FieldOf[User](&(lion.Ptr[User]().Name))
 ```
-
-# !!!!
-
-You can noly set metainfo in `init` function, because there is no mutex.
