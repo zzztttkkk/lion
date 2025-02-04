@@ -34,6 +34,8 @@ type Options[T lion.IntType] struct {
 
 	Sql  bool
 	JSON bool
+
+	Silence bool
 }
 
 func should_re_gen(dir string, targetfp string) bool {
@@ -348,5 +350,8 @@ func (ev *{{.enumtypename}}) Scan(val any) error {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("lion.enums: the file `%s` has been generated, you need to recompile.\r\n", targetfp)
+
+	if !opts.Silence {
+		fmt.Printf("lion.enums: the file `%s` has been generated, you need to recompile.\r\n", targetfp)
+	}
 }
