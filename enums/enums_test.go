@@ -36,10 +36,11 @@ func init() {
 			NameOverwrites: map[X]string{
 				X_6: "Six",
 			},
-			AllSlice:     true,
-			AllSliceName: "AllXValues",
-			Sql:          true,
-			JSON:         true,
+			AllSlice:        true,
+			AllSliceName:    "AllXValues",
+			Sql:             true,
+			JSON:            true,
+			UnmarshalString: true,
 		}
 	})
 }

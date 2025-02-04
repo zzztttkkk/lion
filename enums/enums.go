@@ -32,8 +32,9 @@ type Options[T lion.IntType] struct {
 	AllSliceNotPreDefined bool
 	AllSliceHidens        []T
 
-	Sql  bool
-	JSON bool
+	Sql             bool
+	JSON            bool
+	UnmarshalString bool
 
 	Silence bool
 }
@@ -201,7 +202,7 @@ func init(){
 	{{end}}
 }
 {{end}}
-{{if or .gensql .genjson   }}
+{{if or .gensql .genjson .fromstring  }}
 var (
 	_Enum{{.enumtypename}}NameMap = map[string]{{.enumtypename}}{}
 )
@@ -215,6 +216,16 @@ func _getEnum{{$.enumtypename}}ByName(name string) ({{$.enumtypename}}, error) {
 func init(){
 {{range .items}}	_Enum{{$.enumtypename}}NameMap["{{.string}}"] = {{.vname}}
 {{end}}
+}
+{{end}}
+{{if .fromstring}}
+func (ev *{{.enumtypename}}) UnmarshalString(name string) error {
+	emv, err := _getEnum{{$.enumtypename}}ByName(name)
+	if err != nil {
+		return err
+	}
+	*ev = emv
+	return nil
 }
 {{end}}
 {{if .genjson}}
@@ -306,6 +317,7 @@ func (ev *{{.enumtypename}}) Scan(val any) error {
 		"items":        items,
 		"gensql":       opts.Sql,
 		"genjson":      opts.JSON,
+		"fromstring":   opts.UnmarshalString,
 	}
 
 	if opts.AllSlice {
