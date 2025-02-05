@@ -1,5 +1,0 @@
-package flags
-
-var (
-	DisableInitTimeCodeGeneration = ""
-)
