@@ -40,6 +40,8 @@ func parseTag(v string) *Tag {
 		idx := strings.IndexByte(v, '=')
 		if idx > -1 {
 			tag.Opts[strings.TrimSpace(v[:idx])] = strings.TrimSpace(v[idx+1:])
+		} else {
+			tag.Opts[v] = "true"
 		}
 	}
 	return tag
